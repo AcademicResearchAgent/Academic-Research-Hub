@@ -22,6 +22,8 @@ with httpx.Client(base_url='http://127.0.0.1:9119',timeout=45) as client:
     response.raise_for_status()
     response=client.get('/api/v1/models/model',params={'id':'hermes-agent'})
     response.raise_for_status();base=response.json()
+    if not (backup/'legacy-model.json').exists():
+        (backup/'legacy-model.json').write_text(json.dumps(base,ensure_ascii=False,indent=2))
     grants=[{k:g[k] for k in ('principal_type','principal_id','permission')} for g in base.get('access_grants',[])]
     for entry in catalog['models']:
         response=client.get('/api/v1/models/model',params={'id':entry['id']})
@@ -36,7 +38,26 @@ with httpx.Client(base_url='http://127.0.0.1:9119',timeout=45) as client:
             'capabilities':{**(base.get('meta',{}).get('capabilities') or {}),'vision':entry['vision']},
             'tags':[{'name':catalog['providers'][entry['provider']]['name']}]})
         response=client.post(url,json=model);response.raise_for_status()
+    # Keep the base row and its grants for preset access checks, but retire its
+    # public shared-key entry. Existing chat records retain their original IDs.
+    base['is_active']=True
+    base.setdefault('meta',{})['hidden']=True
+    response=client.post('/api/v1/models/model/update',json=base);response.raise_for_status()
+    response=client.get('/api/v1/configs/models');response.raise_for_status()
+    defaults=response.json()
+    if not (backup/'model-defaults.json').exists():
+        (backup/'model-defaults.json').write_text(json.dumps(defaults,ensure_ascii=False,indent=2))
+    selected=[m for m in (defaults.get('DEFAULT_MODELS') or '').split(',') if m and m!='hermes-agent']
+    defaults['DEFAULT_MODELS']=','.join(selected) or 'ws-deepseek-v4-flash'
+    defaults['DEFAULT_PINNED_MODELS']=','.join(m for m in (defaults.get('DEFAULT_PINNED_MODELS') or '').split(',') if m and m!='hermes-agent')
+    defaults['MODEL_ORDER_LIST']=[m for m in (defaults.get('MODEL_ORDER_LIST') or []) if m!='hermes-agent']
+    response=client.post('/api/v1/configs/models',json=defaults);response.raise_for_status()
+    env=root/'openwebui/container.env'
+    lines=[line for line in env.read_text().splitlines() if not line.startswith('DEFAULT_MODELS=')]
+    env.write_text('\n'.join(lines)+'\nDEFAULT_MODELS='+defaults['DEFAULT_MODELS']+'\n')
+    env.chmod(0o600)
     response=client.get('/api/models');response.raise_for_status()
-    visible={m['id'] for m in response.json()['data']}
+    visible={m['id'] for m in response.json()['data'] if not (m.get('info',{}).get('meta',{}).get('hidden') or False)}
     assert {m['id'] for m in catalog['models']}<=visible
-    print(f"Registered {len(catalog['models'])} personal-key models; existing base access permissions preserved.")
+    assert 'hermes-agent' not in visible,'Legacy shared-key entry is still visible'
+    print(f"Registered {len(catalog['models'])} personal-key models; legacy entry hidden and defaults updated.")

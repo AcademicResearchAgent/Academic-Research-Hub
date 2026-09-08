@@ -14,7 +14,7 @@
 
 管理员登录信息保存在服务器 `/home/ubuntu/haudi-hermes/openwebui/access.json`。
 下载到本机需要用户明确授权；授权后保存到同目录的 `openwebui-access.json`（已加入 Git 忽略规则）。
-登录后选择“科研助手”（底层接口 ID 为 `hermes-agent`）；界面默认中文。
+登录后选择具体型号并配置个人 API Key；默认显示 DeepSeek V4 Flash，界面默认中文。原来单独显示的“科研助手”入口已从选择列表隐藏，内部基础连接记录保留。
 
 开发入口和源码结构见 [项目 README](../../README.md) 与 [开发指南](../../docs/development/DEVELOPMENT.md)。本目录保留现有部署路径和历史运维脚本，不是日常产品源码目录。
 
