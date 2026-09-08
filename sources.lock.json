@@ -17,8 +17,8 @@
   "production": {
     "openwebui_version": "0.11.3",
     "upstream_image": "sha256:6f1a2ca9afd03aad68621e97032e0ce6b92d14298e4d392186e7e9f1e98b9922",
-    "custom_image": "sha256:25530dfc0f2783fe077e84ce6e896bd1700dfe73aa5c668d81e11f584ef15e5e",
-    "custom_tag": "haudi-openwebui:0.11.3-research-v3",
+    "custom_image": "sha256:86727c5a7fd1903c69ab0187e49ace7a0fa2a85b7b2ace66a9476f0e9157c138",
+    "custom_tag": "haudi-openwebui:0.11.3-research-v4",
     "note": "UI commit verified from original image OCI revision label; it differs from tag v0.11.3. Production uses compiled-asset overlays; source patches are the development equivalent, not an identical rebuilt image."
   }
 }

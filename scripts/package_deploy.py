@@ -8,10 +8,14 @@ TARGET=ROOT/'.build/deploy'
 FILES={
  'configs/workstation/research-copy.json':'research-copy.json',
  'configs/workstation/SOUL.md':'research-SOUL.md',
+ 'configs/workstation/retrieval.json':'retrieval.json',
+ 'overlays/open-webui/screen-capture.js':'screen-capture.js',
  **{f'deploy/hermes/{name}':name for name in (
  'build-research-copy.py','configure-research-copy.py','apply-workstation-identity.py',
  'build-workstation-branding.sh','configure-research-copy.sh','deploy-research-copy.sh',
- 'deploy-workstation-identity.sh','verify-research-copy.sh','verify-workstation-identity.sh')},
+ 'deploy-workstation-identity.sh','verify-research-copy.sh','verify-workstation-identity.sh',
+ 'install-retrieval-model.py','install-retrieval-model.sh','configure-retrieval.py','configure-retrieval.sh',
+ 'verify-retrieval.py','verify-retrieval.sh','reindex-failed-files.sh')},
 }
 TARGET.mkdir(parents=True,exist_ok=True)
 for source,destination in FILES.items():

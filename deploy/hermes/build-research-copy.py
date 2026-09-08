@@ -11,12 +11,12 @@ DEPLOY=Path('/home/ubuntu/haudi-hermes')
 ROOT=DEPLOY/'openwebui'
 BASE='ghcr.io/open-webui/open-webui:haudi-pinned'
 EXPECTED='sha256:6f1a2ca9afd03aad68621e97032e0ce6b92d14298e4d392186e7e9f1e98b9922'
-REVISION='haudi-research-v3'
-TAG='haudi-openwebui:0.11.3-research-v3'
+REVISION='haudi-research-v4'
+TAG='haudi-openwebui:0.11.3-research-v4'
 copy=json.loads((DEPLOY/'research-copy.json').read_text())
 work=ROOT/'research-customization'
 original=work/'original'
-context=work/'context-v3'
+context=work/'context-v4'
 
 def run(*args):
     return subprocess.run(args,check=True,capture_output=True,text=True).stdout
@@ -77,6 +77,17 @@ assets[locale_path]=locale
 # Replace fixed channel and notification titles. Keep upstream copyright,
 # licensing notices, URLs and technical identifiers intact.
 changed={auth_path,locale_path}
+capture=(DEPLOY/'screen-capture.js').read_text().split('export ',1)[1].strip()
+for path,handler,on_files,toast in (
+    ('_app/immutable/chunks/CS9gMiwt.js','Fs','li','ft'),
+    ('_app/immutable/nodes/26.CMnsDULe.js','F','m','Qe'),
+):
+    text=assets[path]
+    regex=re.escape(handler)+r'=async\(\)=>\{try\{const .*?catch\([A-Za-z0-9_$]+\)\{\}\}'
+    matches=list(re.finditer(regex,text))
+    assert len(matches)==1 and 'getDisplayMedia' in matches[0].group(), 'Capture bundle changed'
+    assets[path]=text[:matches[0].start()]+handler+'=()=>('+capture+')('+on_files+','+toast+')'+text[matches[0].end():]
+    changed.add(path)
 for path,text in assets.items():
     if '/ Open WebUI' in text and '/nodes/' in path:
         assets[path]=text.replace('/ Open WebUI','/ '+copy['app_name'])

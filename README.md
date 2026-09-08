@@ -23,7 +23,9 @@ configs/workstation/       产品文案、科研助手 SOUL，唯一配置来源
 reference/hermes-agent/    固定版本的执行引擎源码，准备脚本恢复
 reference/open-webui/      固定版本的 Svelte 前端和 Python 后端源码
 patches/                  我们对上游源码的定制，纳入主仓库审查
+overlays/                 源码构建和现有镜像构建共用的修复逻辑
 scripts/                  源码准备、补丁生成、部署材料打包
+tests/                    截图等行为测试
 deploy/hermes/            现有服务器部署、验证和历史排障脚本
 docs/development/         开发流程、架构、上线与回退边界
 docs/                     论文检索调研及测试证据
@@ -45,3 +47,5 @@ sources.lock.json         上游提交和生产镜像锁定信息
 新增论文检索业务应有独立模块与测试，再通过工具接口接入执行引擎；目前没有已实现的独立论文检索服务，不要把提示词中写出的用途当成已完成的模块。
 
 本地 `LLM_API.md`、`server.md`、个人材料、账号录入脚本和运行数据已列入忽略规则。新同事通过管理员取得自己的开发凭据，不复制生产账号库。上游许可与版权声明保留在源码中。
+
+文件上传、网页引用与截图入口的修复及部署步骤见 [附件功能修复记录](docs/development/ATTACHMENT-FIXES.md)。本地文档检索模型已在生产启用；HTTP 下截图按钮提供文件选择与粘贴指引，浏览器直接截屏需 HTTPS 或 localhost。

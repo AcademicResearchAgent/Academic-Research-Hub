@@ -92,7 +92,8 @@ git -C reference/hermes-agent diff --binary --output=../../patches/hermes-agent/
 | 更新产品设置及科研身份 | `configure-research-copy.py` |
 | 更新默认介绍及每请求身份规则 | `apply-workstation-identity.py`、`deploy-workstation-identity.sh` |
 | 当前生产 UI 的编译产物补丁构建 | `build-research-copy.py` |
-| 切换现有 UI 镜像 | `deploy-research-copy.sh`，目前含固定 v3 回退名，不可当作通用重复发布脚本 |
+| 切换现有 UI 镜像 | `deploy-research-copy.sh`，自动保存时间戳回退容器；仍绑定当前服务器路径 |
+| 安装和配置文档检索 | `install-retrieval-model.py`、`configure-retrieval.py`，步骤见附件修复记录 |
 | 配置及聊天验证 | `verify-research-copy.sh`、`verify-workstation-identity.sh` |
 | 论文能力探测 | `probe-*.sh`，部分会调用付费模型 |
 | 历史排障 | `inspect-*`、`check-*`、`fix-*` 等，逐个阅读，不批量执行 |

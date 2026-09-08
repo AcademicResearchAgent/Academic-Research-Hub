@@ -21,9 +21,9 @@ def once(text,old,new):
 def emit(project,changes):
     parts=[]
     for path,new in changes.items():
-        old=original(project,path)
+        old='' if path=='src/lib/utils/screen-capture.js' else original(project,path)
         assert old!=new,path+' has no changes'
-        parts.extend(difflib.unified_diff(old.splitlines(keepends=True),new.splitlines(keepends=True),fromfile='a/'+path,tofile='b/'+path))
+        parts.extend(difflib.unified_diff(old.splitlines(keepends=True),new.splitlines(keepends=True),fromfile='a/'+path if old else '/dev/null',tofile='b/'+path))
     target=ROOT/lock['sources'][project]['patches'][0]
     target.write_text(''.join(parts),encoding='utf-8',newline='\n')
     print(project+': rendered '+str(len(changes))+' source file changes')
@@ -60,6 +60,15 @@ for key,value in locale.items():
     for pattern,replacement in copy['locale_term_patterns'].items():value=re.sub(pattern,replacement,value)
     locale[key]=value
 changes[path]=json.dumps(locale,ensure_ascii=False,indent='\t')+'\n'
+capture=(ROOT/'overlays/open-webui/screen-capture.js').read_text(encoding='utf-8')
+changes['src/lib/utils/screen-capture.js']=capture
+for path in ('src/lib/components/chat/MessageInput.svelte','src/lib/components/channel/MessageInput.svelte'):
+    s=original('open-webui',path)
+    s=once(s,'<script lang="ts">','<script lang="ts">\n\timport { captureScreenshot } from "$lib/utils/screen-capture.js";')
+    start=s.index('\tconst screenCaptureHandler = async () => {')
+    end=s.index('\n\t};',start)+len('\n\t};')
+    s=s[:start]+'\tconst screenCaptureHandler = () => captureScreenshot(inputFilesHandler, toast);'+s[end:]
+    changes[path]=s
 emit('open-webui',changes)
 path='agent/prompt_builder.py'
 s=once(original('hermes-agent',path),'You are Hermes Agent, built by Nous Research. ',
