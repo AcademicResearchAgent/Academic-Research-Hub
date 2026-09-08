@@ -1,0 +1,141 @@
+--- a/agent/prompt_builder.py
++++ b/agent/prompt_builder.py
+@@ -129,7 +129,7 @@
+ DEFAULT_AGENT_IDENTITY = (
+     # A behavior spec (sizing rule, named prohibitions, earned-depth escape hatch), not a trait list — trait
+     # lists change nothing. Maintainer rule: models UNDER-explore by default; never re-add an exploration-thrift line.
+-    "You are Hermes Agent, built by Nous Research. Be direct: match the length of your reply to the weight of the ask "
++    "You are the research assistant in the scientific research workstation. Be direct: match the length of your reply to the weight of the ask "
+     "— a one-line question gets a one-line answer, and finished work gets a short report of what changed, what's "
+     "verified, and what's left, never a replay of the process. No filler (\"Great question,\" \"I'd be happy to\"), no "
+     "restating the request back, no re-summarizing what you already said, no narrating tool calls the user can see. "
+@@ -140,7 +140,7 @@
+ HERMES_AGENT_HELP_GUIDANCE = (
+     # Injected only when skill_view exists AND the hermes-agent skill is installed (system_prompt.py slot
+     # resolution). No "when the two differ" clause: docs-are-authoritative already carries the precedence.
+-    "You run on Hermes Agent (by Nous Research). When the user needs help with Hermes itself — configuring, "
++    "When the user needs help with Hermes itself — configuring, "
+     "setting up, using, extending, or troubleshooting it — or when you need to understand your own features, "
+     "tools, or capabilities, the documentation at https://hermes-agent.nousresearch.com/docs is your "
+     "authoritative reference and always holds the latest, most up-to-date information. The `hermes-agent` "
+@@ -150,7 +150,7 @@
+ 
+ # Variant for sessions without the skills toolset (e.g. Blank Slate): naming skill_view() there would dangle.
+ HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS = (
+-    "You run on Hermes Agent (by Nous Research). When the user needs help with Hermes itself — configuring, "
++    "When the user needs help with Hermes itself — configuring, "
+     "setting up, using, extending, or troubleshooting it — or when you need to understand your own features, "
+     "tools, or capabilities, the documentation at https://hermes-agent.nousresearch.com/docs is the "
+     "authoritative reference and always holds the latest, most up-to-date information. Point the user there "
+--- /dev/null
++++ b/gateway/workstation_runtime.py
+@@ -0,0 +1,28 @@
++"""Consume short-lived authenticated user/model routing envelopes from the local UI."""
++import base64
++import hashlib
++import json
++from pathlib import Path
++from cryptography.fernet import Fernet
++
++def decode_route(token,secret,scope):
++    if not secret or not isinstance(token,str) or len(token)>16384:
++        raise ValueError('Invalid workstation route')
++    cipher=Fernet(base64.urlsafe_b64encode(hashlib.sha256((secret+'/workstation-runtime/v1').encode()).digest()))
++    payload=json.loads(cipher.decrypt(token.encode(),ttl=120))
++    if not scope or payload.get('scope')!=scope:raise ValueError('Session scope mismatch')
++    catalog=json.loads((Path(__file__).parent/'workstation_catalog.json').read_text())
++    model=next((m for m in catalog['models'] if m['upstream_id']==payload.get('model')),None)
++    if not model:raise ValueError('Unknown workstation model')
++    urls={e['url'] for e in catalog['providers'][model['provider']]['endpoints']}
++    if payload.get('base_url') not in urls:raise ValueError('Endpoint does not match provider')
++    key=payload.get('api_key')
++    if not isinstance(key,str) or not 8<=len(key)<=4096 or any(c in key for c in '\r\n\x00'):
++        raise ValueError('Invalid provider credential')
++    return {'model':payload['model'],'base_url':payload['base_url'],'api_key':key,'provider':'custom','_workstation':True}
++
++def apply_runtime(route,runtime):
++    if not isinstance(route,dict) or route.get('_workstation') is not True:return None
++    runtime.update({'provider':'custom','api_key':route['api_key'],'base_url':route['base_url'],
++                    'api_mode':'chat_completions','credential_pool':None,'max_tokens':8192})
++    return route['model']
+--- /dev/null
++++ b/gateway/workstation_catalog.json
+@@ -0,0 +1,21 @@
++{
++  "checked_at": "2026-09-08",
++  "providers": {
++    "qwen": {"name":"Qwen · 阿里云百炼","key_url":"https://bailian.console.aliyun.com/","docs_url":"https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope","endpoints":[{"id":"cn","name":"中国大陆（北京）","url":"https://dashscope.aliyuncs.com/compatible-mode/v1"},{"id":"intl","name":"国际（新加坡）","url":"https://dashscope-intl.aliyuncs.com/compatible-mode/v1"}]},
++    "kimi": {"name":"Kimi · 月之暗面","key_url":"https://platform.kimi.com/","docs_url":"https://platform.kimi.com/docs/models","endpoints":[{"id":"cn","name":"中国大陆","url":"https://api.moonshot.cn/v1"},{"id":"intl","name":"国际","url":"https://api.moonshot.ai/v1"}]},
++    "deepseek": {"name":"DeepSeek","key_url":"https://platform.deepseek.com/api_keys","docs_url":"https://api-docs.deepseek.com/","endpoints":[{"id":"official","name":"官方 API","url":"https://api.deepseek.com/v1"}]},
++    "glm": {"name":"GLM · 智谱","key_url":"https://open.bigmodel.cn/","docs_url":"https://github.com/zai-org/GLM-5","endpoints":[{"id":"cn","name":"智谱开放平台","url":"https://open.bigmodel.cn/api/paas/v4"},{"id":"intl","name":"Z.ai 国际平台","url":"https://api.z.ai/api/paas/v4"}]}
++  },
++  "models": [
++    {"id":"ws-qwen3.8-max","name":"Qwen3.8 Max","provider":"qwen","upstream_id":"qwen3.8-max","vision":true,"description":"旗舰通用模型 · 科研分析、代码与图像理解"},
++    {"id":"ws-qwen3.8-flash","name":"Qwen3.8 Flash","provider":"qwen","upstream_id":"qwen3.8-flash","vision":true,"description":"快速通用模型 · 高频问答与资料整理"},
++    {"id":"ws-kimi-k3","name":"Kimi K3","provider":"kimi","upstream_id":"kimi-k3","vision":true,"description":"旗舰长上下文模型 · 知识工作与深度推理"},
++    {"id":"ws-kimi-k2.7-code","name":"Kimi K2.7 Code","provider":"kimi","upstream_id":"kimi-k2.7-code","vision":true,"description":"编程模型 · 实验代码与长程开发任务"},
++    {"id":"ws-deepseek-v4-pro","name":"DeepSeek V4 Pro","provider":"deepseek","upstream_id":"deepseek-v4-pro","vision":false,"description":"旗舰推理模型 · 复杂分析与科研写作"},
++    {"id":"ws-deepseek-v4-flash","name":"DeepSeek V4 Flash","provider":"deepseek","upstream_id":"deepseek-v4-flash","vision":false,"description":"快速文本模型 · 日常科研任务"},
++    {"id":"ws-deepseek-v4-flash-vision-exp","name":"DeepSeek V4 Flash Vision · 实验版","provider":"deepseek","upstream_id":"deepseek-v4-flash-vision-exp","vision":true,"description":"实验性视觉模型 · 图像与截图理解"},
++    {"id":"ws-glm-5.3","name":"GLM-5.3","provider":"glm","upstream_id":"glm-5.3","vision":false,"description":"旗舰模型 · 编程与长程任务"},
++    {"id":"ws-glm-5.3-flash","name":"GLM-5.3 Flash","provider":"glm","upstream_id":"glm-5.3-flash","vision":true,"description":"快速多模态模型 · 文本与图像任务"},
++    {"id":"ws-glm-5.2","name":"GLM-5.2","provider":"glm","upstream_id":"glm-5.2","vision":false,"description":"长上下文推理模型 · 大篇幅资料分析"}
++  ]
++}
+--- a/gateway/platforms/api_server_openai_routes.py
++++ b/gateway/platforms/api_server_openai_routes.py
+@@ -382,6 +382,13 @@
+         """Resolve the model_routes alias + per-request overrides ->
+         ``(route, agent_overrides, error_response_or_None)``."""
+         from gateway.platforms.api_server import _error_response, _request_agent_overrides
++        token = body.pop('_workstation_runtime', None)
++        if token is not None:
++            from gateway.workstation_runtime import decode_route
++            try:
++                return decode_route(token, self._expected_api_key(), gateway_session_key), {}, None
++            except Exception:
++                return None, {}, _error_response('Invalid workstation model authorization', 403)
+         route = self._resolve_route(model_alias)
+         overrides = _request_agent_overrides(
+             body, virtual_model=self._model_name, allow_bare_model=self._direct_model_requests)
+@@ -482,7 +489,8 @@
+             # one Hermes session.
+             first_user = next(
+                 (cm.get("content", "") for cm in conversation_messages if cm.get("role") == "user"), "")
+-            session_id = _derive_chat_session_id(system_prompt, first_user)
++            scoped_prompt = (system_prompt or '') + ('\nWorkstation session: ' + gateway_session_key if body.get('_workstation_runtime') and gateway_session_key else '')
++            session_id = _derive_chat_session_id(scoped_prompt, first_user)
+         completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
+         model_name = body.get("model", self._model_name)
+         created = int(time.time())
+--- a/gateway/platforms/api_server.py
++++ b/gateway/platforms/api_server.py
+@@ -2037,6 +2037,10 @@
+         model_routes alias > per-request provider/model > global defaults. A confirmed lock
+         bypasses the override and fails closed if its provider cannot be resolved.
+         Returns ``(model, session_override, request_model, request_provider)``."""
++        from gateway.workstation_runtime import apply_runtime
++        workstation_model = apply_runtime(route, runtime_kwargs)
++        if workstation_model:
++            return workstation_model, None, None, None
+         request_model = _clean_request_string(requested_model)
+         request_provider = _clean_request_string(requested_provider)
+         route_cfg = route if isinstance(route, dict) else {}
+@@ -2118,7 +2122,7 @@
+         # RuntimeError is caught ONLY here (sole provider-auth raiser); the typed subclass keeps
+         # run_conversation() errors distinct.
+         try:
+-            runtime_kwargs = _resolve_runtime_agent_kwargs()
++            runtime_kwargs = {} if route and route.get("_workstation") else _resolve_runtime_agent_kwargs()
+         except RuntimeError as exc:
+             raise _ProviderAuthResolutionError(str(exc)) from exc
+         # A fallback-provider runtime carries its own ``model``: pop it (overrides config, and
+@@ -2155,7 +2159,7 @@
+             "tool_complete_callback": tool_complete_callback,
+             "session_db": self._ensure_session_db(),
+             # Same fallback provider chain as Telegram/Discord/Slack.
+-            "fallback_model": None if confirmed_runtime_lock else GatewayRunner._load_fallback_model(),
++            "fallback_model": None if confirmed_runtime_lock or (route and route.get("_workstation")) else GatewayRunner._load_fallback_model(),
+             "reasoning_config": request_reasoning_config,
+             "gateway_session_key": gateway_session_key}
+         if request_service_tier is not _REQUEST_OPTION_MISSING:

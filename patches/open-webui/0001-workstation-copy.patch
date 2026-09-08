@@ -1,0 +1,1312 @@
+--- a/src/routes/auth/+page.svelte
++++ b/src/routes/auth/+page.svelte
+@@ -277,10 +277,12 @@
+ 										{:else if mode === 'ldap'}
+ 											{$i18n.t(`Sign in to {{WEBUI_NAME}} with LDAP`, { WEBUI_NAME: $WEBUI_NAME })}
+ 										{:else if mode === 'signin'}
+-											{$i18n.t(`Sign in to {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
++											{$i18n.t("登录科研智能体工作站")}
+ 										{:else}
+ 											{$i18n.t(`Sign up to {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
+ 										{/if}
++<p id="haudi-research-purpose" class="mt-2 text-sm text-gray-500">从科学文献调研到实验设计与论文写作</p>
++<p id="haudi-local-account-help" class="mt-2 text-xs text-gray-500">使用本站科研账号登录。账号由管理员统一创建，邮箱仅作为登录名。</p>
+ 									</div>
+ 
+ 									{#if $config?.onboarding ?? false}
+@@ -331,16 +333,16 @@
+ 										{:else}
+ 											<div class="mb-2">
+ 												<label for="email" class="text-sm font-normal text-left mb-1 block"
+-													>{$i18n.t('Email')}</label
++													>{$i18n.t('本站科研账号（邮箱格式）')}</label
+ 												>
+ 												<input
+ 													bind:value={email}
+ 													type="email"
+ 													id="email"
+ 													class="my-0.5 w-full text-sm outline-hidden bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-600"
+-													autocomplete="email"
++													autocomplete="username" aria-describedby="haudi-local-account-help"
+ 													name="email"
+-													placeholder={$i18n.t('Enter Your Email')}
++													placeholder={$i18n.t('请输入本站科研账号')}
+ 													required
+ 												/>
+ 											</div>
+--- a/src/lib/components/OnBoarding.svelte
++++ b/src/lib/components/OnBoarding.svelte
+@@ -75,7 +75,7 @@
+ 					Do not alter, remove, obscure, or replace it except as LICENSE permits:
+ 					https://docs.openwebui.com/license. -->
+ 					<div class="mb-4 text-[0.6875rem] font-medium tracking-[0.18em] uppercase opacity-35">
+-						Open WebUI
++						科研智能体工作站
+ 					</div>
+ 
+ 					<h1 class="m-0 max-w-3xl text-2xl leading-[1.15] font-light tracking-tight lg:text-4xl">
+--- a/src/routes/+layout.svelte
++++ b/src/routes/+layout.svelte
+@@ -603,7 +603,7 @@
+ 
+ 			if ($isLastActiveTab) {
+ 				if ($settings?.notificationEnabled ?? false) {
+-					new Notification(`${data.title} / Open WebUI`, {
++					new Notification(`${data.title} / 科研智能体工作站`, {
+ 						body: timeStr,
+ 						// LICENSE covers this Open WebUI notification identifier.
+ 						// Do not alter, remove, obscure, or replace it except as LICENSE permits:
+@@ -741,7 +741,7 @@
+ 
+ 					if ($isLastActiveTab) {
+ 						if ($settings?.notificationEnabled ?? false) {
+-							new Notification(`${displayTitle} / Open WebUI`, {
++							new Notification(`${displayTitle} / 科研智能体工作站`, {
+ 								body: contentPreview,
+ 								// LICENSE covers this Open WebUI notification identifier.
+ 								// Do not alter, remove, obscure, or replace it except as LICENSE permits:
+@@ -854,7 +854,7 @@
+ 						// LICENSE covers this Open WebUI notification identifier.
+ 						// Do not alter, remove, obscure, or replace it except as LICENSE permits:
+ 						// https://docs.openwebui.com/license.
+-						new Notification(`${title} / Open WebUI`, {
++						new Notification(`${title} / 科研智能体工作站`, {
+ 							body: data?.content,
+ 							icon: `${WEBUI_API_BASE_URL}/users/${data?.user?.id}/profile/image`
+ 						});
+--- a/src/lib/components/channel/Channel.svelte
++++ b/src/lib/components/channel/Channel.svelte
+@@ -310,10 +310,10 @@
+ 					} else {
+ 						return e.name;
+ 					}
+-				}, '')} / Open WebUI</title
++				}, '')} / 科研智能体工作站</title
+ 		>
+ 	{:else}
+-		<title>#{channel?.name ?? 'Channel'} / Open WebUI</title>
++		<title>#{channel?.name ?? 'Channel'} / 科研智能体工作站</title>
+ 	{/if}
+ </svelte:head>
+ 
+--- a/src/app.html
++++ b/src/app.html
+@@ -125,7 +125,7 @@
+ 			})();
+ 		</script>
+ 
+-		<title>Open WebUI</title>
++		<title>科研智能体工作站</title>
+ 
+ 		%sveltekit.head%
+ 	</head>
+--- a/backend/open_webui/env.py
++++ b/backend/open_webui/env.py
+@@ -934,8 +934,6 @@
+ # Do not alter, remove, obscure, or replace it except as LICENSE permits:
+ # https://docs.openwebui.com/license.
+ WEBUI_NAME = os.getenv('WEBUI_NAME', 'Open WebUI')
+-if WEBUI_NAME != 'Open WebUI':
+-    WEBUI_NAME += ' (Open WebUI)'
+ 
+ # LICENSE covers this Open WebUI branding surface, including this favicon
+ # and any visual, textual, or symbolic identifiers it preserves.
+--- a/src/lib/i18n/locales/zh-CN/translation.json
++++ b/src/lib/i18n/locales/zh-CN/translation.json
+@@ -101,7 +101,7 @@
+ 	"Add filenames, titles, sections, and snippets to improve lexical recall.": "添加文件名、标题、章节和代码片段以提高词汇召回率。",
+ 	"Add Files": "添加文件",
+ 	"Add Image": "添加图片",
+-	"Add Knowledge Connection": "添加知识库连接",
++	"Add Knowledge Connection": "添加文献资料库连接",
+ 	"Add location": "添加地点",
+ 	"Add Member": "添加成员",
+ 	"Add Members": "添加成员",
+@@ -136,12 +136,12 @@
+ 	"Admin Panel": "管理员面板",
+ 	"Admin Roles": "管理员角色",
+ 	"Admin-managed service account": "管理员管理的服务账号",
+-	"Admins have access to all tools at all times; users need tools assigned per model in the workspace.": "管理员拥有所有工具的完全访问权限；用户则需在工作空间中为每个模型单独分配工具。",
++	"Admins have access to all tools at all times; users need tools assigned per model in the workspace.": "管理员拥有所有工具的完全访问权限；用户则需在科研资源中为每个模型单独分配工具。",
+ 	"Advanced": "高级",
+ 	"Advanced MinerU parsing parameters in JSON format.": "MinerU 高级解析参数，格式为 JSON。",
+ 	"Advanced Parameters": "高级参数",
+ 	"Advanced Params": "高级参数",
+-	"After changing the embedding model, reindex knowledge, knowledge search, and memory vectors for changes to take effect.": "更改嵌入模型后，需要重新索引知识库、知识搜索和记忆向量才能生效。",
++	"After changing the embedding model, reindex knowledge, knowledge search, and memory vectors for changes to take effect.": "更改嵌入模型后，需要重新索引文献资料库、知识搜索和记忆向量才能生效。",
+ 	"All": "全部",
+ 	"All Chats": "所有对话",
+ 	"All chats have been unarchived.": "已成功取消全部对话的归档状态。",
+@@ -158,7 +158,7 @@
+ 	"Allow": "允许",
+ 	"Allow {{NAME}}?": "允许 {{NAME}}？",
+ 	"Allow artifacts to access same-origin browser APIs inside the sandbox.": "允许产物在沙盒内访问同源浏览器 API。",
+-	"Allow automatic names for new chats.": "允许为新对话自动生成名称。",
++	"Allow automatic names for new chats.": "允许为新科研任务自动生成名称。",
+ 	"Allow browser notifications for completed responses.": "允许在回答完成时发送浏览器通知。",
+ 	"Allow Call": "允许语音通话",
+ 	"Allow Chat Controls": "允许使用对话高级设置",
+@@ -190,7 +190,7 @@
+ 	"Allow Sharing With Groups": "允许分享给用户组",
+ 	"Allow Sharing With Users": "允许分享给其他用户",
+ 	"Allow Speech to Text": "允许语音转文本",
+-	"Allow Temporary Chat": "允许临时对话",
++	"Allow Temporary Chat": "允许临时科研任务",
+ 	"Allow terminal previews to access same-origin browser APIs.": "允许终端预览访问同源浏览器 API。",
+ 	"Allow Text to Speech": "允许文本转语音",
+ 	"Allow the AI to delegate tasks to sub-agents. Each sub-agent creates a real chat with full tool access. Uses additional LLM calls.": "允许 AI 将任务委派给子智能体。每个子智能体会创建一个拥有完整工具访问权限的真实对话。会消耗额外的 LLM 调用。",
+@@ -201,7 +201,7 @@
+ 	"Allow users to authenticate with an OAuth / OIDC provider.": "允许用户通过 OAuth / OIDC 提供商进行身份验证。",
+ 	"Allow users to configure webhooks from their account.": "允许用户在账号中配置 Webhook。",
+ 	"Allow users to create accounts through OAuth.": "允许用户通过 OAuth 创建账号。",
+-	"Allow users to create and manage notes.": "允许用户创建和管理笔记。",
++	"Allow users to create and manage notes.": "允许用户创建和管理研究笔记。",
+ 	"Allow users to create and run automations.": "允许用户创建和运行自动化任务。",
+ 	"Allow users to create API keys for programmatic access.": "允许用户创建 API 密钥以进行编程访问。",
+ 	"Allow users to edit existing images.": "允许用户编辑已有图片。",
+@@ -291,18 +291,18 @@
+ 	"Ask": "提问",
+ 	"Ask a question": "提问",
+ 	"Ask a test question": "提一个测试问题",
+-	"Ask this knowledge source a test question": "向此知识库来源提一个测试问题",
++	"Ask this knowledge source a test question": "向此文献资料库来源提一个测试问题",
+ 	"Ask User": "询问用户",
+ 	"Assistant": "助手",
+ 	"Assistant messages": "助手消息",
+ 	"Async Embedding Processing": "异步嵌入处理",
+ 	"at": "于",
+ 	"At time of event": "事件开始时",
+-	"Attach File From Knowledge": "引用知识库中的文件",
++	"Attach File From Knowledge": "引用文献资料库中的文件",
+ 	"Attach Files": "添加文件",
+ 	"Attach files with full content or focused retrieval by default.": "默认以完整内容或聚焦检索方式附加文件。",
+-	"Attach Knowledge": "引用知识库",
+-	"Attach Notes": "引用笔记",
++	"Attach Knowledge": "引用文献资料库",
++	"Attach Notes": "引用研究笔记",
+ 	"Attach Webpage": "引用网页",
+ 	"Attention to detail": "注重细节",
+ 	"Attribute for Mail": "邮箱属性",
+@@ -329,7 +329,7 @@
+ 	"Automatic Events": "自动事件",
+ 	"Automatic1111": "Automatic1111",
+ 	"AUTOMATIC1111 Base URL is required.": "AUTOMATIC1111 接口地址是必填项。",
+-	"Automatically inject system tools in native function calling mode (e.g., timestamps, memory, chat history, notes, etc.)": "在原生函数调用模式下自动注入系统工具（例如时间戳、记忆、对话历史、笔记等）。",
++	"Automatically inject system tools in native function calling mode (e.g., timestamps, memory, chat history, notes, etc.)": "在原生函数调用模式下自动注入系统工具（例如时间戳、记忆、科研任务记录、研究笔记等）。",
+ 	"Automation": "自动化任务",
+ 	"Automation created": "自动化任务已创建",
+ 	"Automation Menu": "自动化任务菜单",
+@@ -381,7 +381,7 @@
+ 	"Brave": "Brave",
+ 	"Brave Search API Key": "Brave Search 接口密钥",
+ 	"Break down complex requests into trackable steps": "将复杂的请求拆解为可跟踪的步骤",
+-	"Browse and query knowledge bases": "浏览和查询知识库",
++	"Browse and query knowledge bases": "浏览和查询文献资料库",
+ 	"Browser Notifications": "浏览器通知",
+ 	"Builtin Tools": "内置工具",
+ 	"Bullet List": "无序列表",
+@@ -406,7 +406,7 @@
+ 	"Camera": "摄像头",
+ 	"Cancel": "取消",
+ 	"Cancel download of {{model}}": "取消模型 “{{model}}” 的下载",
+-	"Cannot create an empty note.": "无法创建空笔记。",
++	"Cannot create an empty note.": "无法创建空研究笔记。",
+ 	"Cannot delete the production version": "无法删除当前使用中的版本",
+ 	"Capabilities": "能力",
+ 	"Capture": "截图",
+@@ -437,8 +437,8 @@
+ 	"Chat Direction": "对话显示方向",
+ 	"Chat exported successfully": "对话已成功导出",
+ 	"Chat forked": "对话已分叉",
+-	"Chat history": "对话历史",
+-	"Chat History": "对话历史记录",
++	"Chat history": "科研任务记录",
++	"Chat History": "科研任务记录记录",
+ 	"Chat Hover Previews": "对话悬停预览",
+ 	"Chat ID": "对话 ID",
+ 	"Chat is too short to compact": "对话内容太短，无法压缩",
+@@ -577,7 +577,7 @@
+ 	"Compacting context": "正在压缩上下文",
+ 	"Compacting context...": "正在压缩上下文……",
+ 	"Compare": "比较",
+-	"Comparing with knowledge base...": "正在比对知识库……",
++	"Comparing with knowledge base...": "正在比对文献资料库……",
+ 	"Completions": "续写",
+ 	"Compress Images in Channels": "压缩频道中的图片",
+ 	"Compress uploaded images before sending or storage.": "在发送或存储前压缩上传的图片。",
+@@ -671,9 +671,9 @@
+ 	"Could not read file.": "读取文件失败。",
+ 	"CPU": "CPU",
+ 	"Create": "创建",
+-	"Create a knowledge base": "创建知识库",
++	"Create a knowledge base": "创建文献资料库",
+ 	"Create a model": "创建模型",
+-	"Create a new note": "新建笔记",
++	"Create a new note": "新建研究笔记",
+ 	"Create Account": "创建账号",
+ 	"Create Admin Account": "创建管理员账号",
+ 	"Create and manage scheduled automations": "创建和管理计划自动化任务",
+@@ -690,7 +690,7 @@
+ 	"Create new secret key": "创建新安全密钥",
+ 	"Create Prompt": "创建提示词",
+ 	"Create scheduled prompts that run automatically on a recurring basis.": "创建按周期自动执行的提示词任务。",
+-	"Create your first note from the Create menu.": "从创建菜单创建您的第一条笔记。",
++	"Create your first note from the Create menu.": "从创建菜单记录研究问题、文献阅读心得或实验过程。",
+ 	"Create, copy, or rotate your API key.": "创建、复制或轮换您的 API 密钥。",
+ 	"Created": "已创建",
+ 	"Created at": "创建于",
+@@ -779,7 +779,7 @@
+ 	"Delete Message": "删除消息",
+ 	"Delete message?": "要删除此消息吗？",
+ 	"Delete Model": "删除模型",
+-	"Delete note?": "要删除此笔记吗？",
++	"Delete note?": "要删除此研究笔记吗？",
+ 	"Delete prompt?": "要删除此提示词吗？",
+ 	"Delete skill?": "要删除此技能吗？",
+ 	"delete this link": "此处删除这个链接",
+@@ -800,12 +800,12 @@
+ 	"Describe the edit...": "描述本次修改…",
+ 	"Describe the image...": "描述图片内容…",
+ 	"Describe what changed...": "描述变更内容…",
+-	"Describe your knowledge base and objectives": "描述您的知识库和目标",
++	"Describe your knowledge base and objectives": "描述您的文献资料库和目标",
+ 	"Description": "描述",
+ 	"Deselect": "取消选中",
+ 	"Destination": "目标",
+ 	"Detect Artifacts Automatically": "自动检测对话产物",
+-	"Detect generated artifacts and show them in the artifact workspace.": "检测生成的产物并将其显示在产物工作空间中。",
++	"Detect generated artifacts and show them in the artifact workspace.": "检测生成的产物并将其显示在产物科研资源中。",
+ 	"Detected Variables": "检测到的变量",
+ 	"Dictate": "语音输入",
+ 	"Didn't fully follow instructions": "没有完全遵循指令",
+@@ -878,12 +878,12 @@
+ 	"Download as SVG": "下载为 SVG",
+ 	"Download canceled": "下载已取消",
+ 	"Download CSV Template": "下载 CSV 模板",
+-	"Download every user's chat history as JSON.": "将每个用户的对话历史下载为 JSON。",
++	"Download every user's chat history as JSON.": "将每个用户的科研任务记录下载为 JSON。",
+ 	"Download failed": "下载失败",
+ 	"Download Model": "下载模型",
+ 	"Download the application database when supported.": "在支持时下载应用数据库。",
+ 	"Download the current admin configuration as JSON.": "将当前管理员配置下载为 JSON。",
+-	"Download your chat history as a JSON export.": "将您的对话历史下载为 JSON 导出。",
++	"Download your chat history as a JSON export.": "将您的科研任务记录下载为 JSON 导出。",
+ 	"Downloading \"{{searchValue}}\"": "正在下载“{{searchValue}}”",
+ 	"Downloading stats...": "正在下载统计数据……",
+ 	"Drag to reorder": "拖拽以重新排序",
+@@ -922,7 +922,7 @@
+ 	"Edit Default Permissions": "编辑默认权限",
+ 	"Edit Folder": "编辑分组",
+ 	"Edit Image": "图片编辑",
+-	"Edit Knowledge Connection": "编辑知识库连接",
++	"Edit Knowledge Connection": "编辑文献资料库连接",
+ 	"Edit Last Message": "编辑最后一条消息",
+ 	"Edit Memory": "编辑记忆",
+ 	"Edit Prompt": "编辑提示词",
+@@ -966,9 +966,9 @@
+ 	"End Tag": "结束标签",
+ 	"Endpoint": "端点",
+ 	"Endpoint URL": "接口地址",
+-	"Enforce Temporary Chat": "强制临时对话",
++	"Enforce Temporary Chat": "强制临时科研任务",
+ 	"Enhance": "润色",
+-	"Enhance this note and update it.": "增强此笔记并更新。",
++	"Enhance this note and update it.": "增强此研究笔记并更新。",
+ 	"Enrich Hybrid Search Text": "增强混合搜索文本",
+ 	"Ensure your CSV file includes 4 columns in this order: Name, Email, Password, Role.": "确保您的 CSV 文件按以下顺序包含 4 列：姓名、电子邮箱、密码、角色。",
+ 	"Enter {{role}} message here": "在此处输入 {{role}} 的对话内容",
+@@ -1179,7 +1179,7 @@
+ 	"External Web Loader URL": "外部网页加载器接口地址",
+ 	"External Web Search API Key": "外部联网搜索接口密钥",
+ 	"External Web Search URL": "外部联网搜索接口地址",
+-	"Extract action items from this note.": "从此笔记中提取待办事项。",
++	"Extract action items from this note.": "从此研究笔记中提取待办事项。",
+ 	"Extract images from PDFs so OCR can process image-only pages.": "从 PDF 中提取图片，以便 OCR 处理纯图片页。",
+ 	"Fade Effect for Streaming Text": "流式输出内容时启用动态渐显效果",
+ 	"Fade streaming text as it arrives.": "流式文本到达时混入显示。",
+@@ -1194,7 +1194,7 @@
+ 	"Failed to create API Key.": "创建接口密钥失败",
+ 	"Failed to create chat": "创建对话失败",
+ 	"Failed to delete calendar": "删除日程失败",
+-	"Failed to delete note": "删除笔记失败",
++	"Failed to delete note": "删除研究笔记失败",
+ 	"Failed to delete webhook": "删除 Webhook 失败",
+ 	"Failed to disconnect": "断开连接失败",
+ 	"Failed to download image": "图片下载失败",
+@@ -1408,7 +1408,7 @@
+ 	"Host": "主机",
+ 	"Hourly": "每小时",
+ 	"Hourly Messages": "每小时消息数",
+-	"How can I help you today?": "有什么我能帮您的吗？",
++	"How can I help you today?": "描述你的研究主题、科学问题或写作任务",
+ 	"How would you rate this response?": "您如何评价这个回答？",
+ 	"HTML": "HTML",
+ 	"http://localhost:8000": "http://localhost:8000",
+@@ -1444,7 +1444,7 @@
+ 	"Images": "图片",
+ 	"Import": "导入",
+ 	"Import admin configuration from a JSON export file.": "从 JSON 导出文件导入管理员配置。",
+-	"Import chat history from a JSON export file.": "从 JSON 导出文件导入对话历史。",
++	"Import chat history from a JSON export file.": "从 JSON 导出文件导入科研任务记录。",
+ 	"Import Chats": "导入对话记录",
+ 	"Import Config": "导入配置文件",
+ 	"Import CSV": "导入 CSV",
+@@ -1458,7 +1458,7 @@
+ 	"Import txt/md": "导入 txt/md",
+ 	"Important Update": "重要更新",
+ 	"Imported automations successfully": "自动化任务导入成功",
+-	"Imported notes successfully": "笔记导入成功",
++	"Imported notes successfully": "研究笔记导入成功",
+ 	"Importing...": "正在导入……",
+ 	"Inactive": "未激活",
+ 	"Include": "包括",
+@@ -1480,7 +1480,7 @@
+ 	"Input Variables": "插入变量",
+ 	"Insert": "插入",
+ 	"Insert Follow-Up Prompt to Input": "回填追问提示词到输入框",
+-	"Insert into note": "插入到笔记",
++	"Insert into note": "插入到研究笔记",
+ 	"Insert Prompt as Rich Text": "以富文本的形式回填提示词",
+ 	"Insert selected follow-up prompts directly into the composer.": "将选定的后续提示词直接插入编辑器。",
+ 	"Insert Suggestion Prompt to Input": "回填推荐提示词到输入框",
+@@ -1530,21 +1530,21 @@
+ 	"Key is required": "密匙是必填项。",
+ 	"key_name": "key_name",
+ 	"Keyboard": "键盘",
+-	"Knowledge": "知识库",
+-	"Knowledge Access": "访问知识库",
+-	"Knowledge Base": "知识库",
+-	"Knowledge base has been reset": "知识库已重置",
+-	"Knowledge base not found.": "未找到知识库。",
+-	"Knowledge created successfully.": "知识库创建成功",
+-	"Knowledge deleted successfully.": "知识库删除成功",
+-	"Knowledge Description": "知识库描述",
+-	"Knowledge exported successfully": "知识库导出成功",
+-	"Knowledge Name": "知识库名称",
+-	"Knowledge Public Sharing": "公开分享知识库",
+-	"Knowledge Sharing": "分享知识库",
++	"Knowledge": "文献资料库",
++	"Knowledge Access": "访问文献资料库",
++	"Knowledge Base": "文献资料库",
++	"Knowledge base has been reset": "文献资料库已重置",
++	"Knowledge base not found.": "未找到文献资料库。",
++	"Knowledge created successfully.": "文献资料库创建成功",
++	"Knowledge deleted successfully.": "文献资料库删除成功",
++	"Knowledge Description": "文献资料库描述",
++	"Knowledge exported successfully": "文献资料库导出成功",
++	"Knowledge Name": "文献资料库名称",
++	"Knowledge Public Sharing": "公开分享文献资料库",
++	"Knowledge Sharing": "分享文献资料库",
+ 	"Knowledge source created.": "知识源已创建。",
+ 	"Knowledge source updated.": "知识源已更新。",
+-	"Knowledge updated successfully": "知识库更新成功",
++	"Knowledge updated successfully": "文献资料库更新成功",
+ 	"Kokoro.js (Browser)": "Kokoro.js（运行于用户浏览器）",
+ 	"Kokoro.js Dtype": "Kokoro.js Dtype",
+ 	"Label": "标签",
+@@ -1770,7 +1770,7 @@
+ 	"Model unloaded successfully": "模型卸载成功",
+ 	"Model updated successfully": "模型更新成功",
+ 	"Model Usage": "模型用量",
+-	"Model used to generate embeddings. Reindex knowledge after changing this.": "用于生成向量嵌入的模型。更改后请重新索引知识库。",
++	"Model used to generate embeddings. Reindex knowledge after changing this.": "用于生成向量嵌入的模型。更改后请重新索引文献资料库。",
+ 	"Model used to rerank retrieved results.": "用于重新排序检索结果的模型。",
+ 	"Model-specific context compaction thresholds cannot exceed this token limit.": "模型特定的上下文压缩阈值不能超过此 Token 限制。",
+ 	"Model(s) do not support file upload": "模型不支持上传文件",
+@@ -1801,7 +1801,7 @@
+ 	"Name": "名称",
+ 	"Name and ID are required, please fill them out": "名称和 ID 是必填项，请填写。",
+ 	"Name is required": "名称为必填项",
+-	"Name your knowledge base": "为您的知识库命名",
++	"Name your knowledge base": "为您的文献资料库命名",
+ 	"Name, prompt, and model are required": "名称、提示词和模型不能为空",
+ 	"Native": "原生",
+ 	"Native mode (default) leverages the model's built-in tool-calling capabilities. Legacy mode works with a wider range of models by calling tools once before execution via prompt injection.": "原生模式（默认）利用模型内置的工具调用能力。旧版模式通过提示词注入在执行前一次性调用工具，兼容更多模型。",
+@@ -1813,17 +1813,17 @@
+ 	"New calendar": "新建日程",
+ 	"New Calendar": "新建日程",
+ 	"New chat": "新建对话",
+-	"New Chat": "新对话",
++	"New Chat": "新科研任务",
+ 	"New directory": "新建目录",
+ 	"New Directory": "新建目录",
+ 	"New File": "新建文件",
+ 	"New Folder": "创建分组",
+ 	"New Function": "新函数",
+ 	"New Group": "新建用户组",
+-	"New Note": "创建笔记",
++	"New Note": "创建研究笔记",
+ 	"New Password": "新密码",
+ 	"New Sign Ups": "新注册用户",
+-	"New Temporary Chat": "创建临时对话",
++	"New Temporary Chat": "创建临时科研任务",
+ 	"New Terminal": "新建终端",
+ 	"New Tool": "新建工具",
+ 	"New Webhook": "新建 Webhook",
+@@ -1842,7 +1842,7 @@
+ 	"No automations found": "还没有任何自动化任务",
+ 	"No channels": "没有频道",
+ 	"No chat alerts": "没有对话提醒",
+-	"No chat history": "没有对话历史",
++	"No chat history": "没有科研任务记录",
+ 	"No chat to compact": "没有可紧凑的对话",
+ 	"No chat to fork": "没有可复制的对话",
+ 	"No chats": "没有对话",
+@@ -1862,7 +1862,7 @@
+ 	"No feedback found": "未找到反馈",
+ 	"No file selected": "未选中文件",
+ 	"No files found": "未找到文件",
+-	"No files in this knowledge base.": "此知识库中没有文件。",
++	"No files in this knowledge base.": "此文献资料库中没有文件。",
+ 	"No files yet. Upload files or run Python code to create them.": "暂无文件。请上传文件或运行 Python 代码以创建文件。",
+ 	"No filters found": "未找到过滤器",
+ 	"No folders": "没有文件夹",
+@@ -1872,9 +1872,9 @@
+ 	"No HTML, CSS, or JavaScript content found.": "未找到 HTML、CSS 或 JavaScript 内容。",
+ 	"No inference engine with management support found": "未找到支持管理的推理引擎",
+ 	"No kernel": "未找到内核",
+-	"No knowledge bases accessible": "没有可访问的知识库",
+-	"No knowledge bases found.": "未找到知识库",
+-	"No knowledge found": "未找到知识",
++	"No knowledge bases accessible": "没有可访问的文献资料库",
++	"No knowledge bases found.": "未找到文献资料库",
++	"No knowledge found": "暂无文献资料",
+ 	"No limit": "无限制",
+ 	"No matches": "未找到匹配项",
+ 	"No model data": "没有模型数据",
+@@ -1883,8 +1883,8 @@
+ 	"No models accessible": "没有可访问的模型",
+ 	"No models available": "暂无可用模型",
+ 	"No models found": "未找到任何模型",
+-	"No Notes": "没有笔记",
+-	"No notes found": "没有任何笔记",
++	"No Notes": "暂无研究笔记",
++	"No notes found": "没有任何研究笔记",
+ 	"No notification targets configured.": "未配置通知目标。",
+ 	"No one": "没有人",
+ 	"No output items": "没有任何输出项",
+@@ -1918,12 +1918,12 @@
+ 	"Not helpful": "没有任何帮助",
+ 	"Not Registered": "未注册",
+ 	"Not scheduled": "未设置定时任务",
+-	"Note": "笔记",
+-	"Note deleted successfully": "笔记删除成功",
+-	"Note Menu": "笔记菜单",
+-	"Notes": "笔记",
+-	"Notes Public Sharing": "公开分享笔记",
+-	"Notes Sharing": "分享笔记",
++	"Note": "研究笔记",
++	"Note deleted successfully": "研究笔记删除成功",
++	"Note Menu": "研究笔记菜单",
++	"Notes": "研究笔记",
++	"Notes Public Sharing": "公开分享研究笔记",
++	"Notes Sharing": "分享研究笔记",
+ 	"Nothing to compact": "没有可紧凑的内容",
+ 	"Notification Sound": "通知提示音",
+ 	"Notification Targets": "通知目标",
+@@ -1968,7 +1968,7 @@
+ 	"Only alphanumeric characters and hyphens are allowed": "只允许使用英文字母，数字 (0-9) 以及连字符 (-)",
+ 	"Only alphanumeric characters and hyphens are allowed in the command string.": "命令字符串中只允许使用英文字母，数字 (0-9) 以及连字符 (-)。",
+ 	"Only can be triggered when the chat input is in focus.": "仅在聚焦对话框时有效。",
+-	"Only collections can be edited, create a new knowledge base to edit/add documents.": "只能编辑文件集，创建一个新的知识库来编辑/添加文件。",
++	"Only collections can be edited, create a new knowledge base to edit/add documents.": "只能编辑文件集，创建一个新的文献资料库来编辑/添加文件。",
+ 	"Only install functions from sources you trust.": "仅从您信任的来源安装函数。",
+ 	"Only install tools from sources you trust.": "仅从您信任的来源安装工具。",
+ 	"Only invited users can access": "只有受邀用户才能访问",
+@@ -1992,7 +1992,7 @@
+ 	"Open Modal To Manage Floating Quick Actions": "管理快捷操作浮窗",
+ 	"Open Modal To Manage Image Compression": "打开图片压缩配置窗口",
+ 	"Open Model Selector": "打开模型选择器",
+-	"Open note": "打开笔记",
++	"Open note": "打开研究笔记",
+ 	"Open Settings": "打开设置页面",
+ 	"Open Sidebar": "展开侧边栏",
+ 	"Open Terminal": "Open Terminal",
+@@ -2229,7 +2229,7 @@
+ 	"Registration successful": "注册成功",
+ 	"Reindex": "重建索引",
+ 	"Reindex Embedding Data": "重新索引向量嵌入数据",
+-	"Reindex Knowledge and Memory Vectors": "重新索引知识库和记忆向量",
++	"Reindex Knowledge and Memory Vectors": "重新索引文献资料库和记忆向量",
+ 	"Release Notes": "更新日志",
+ 	"Releases": "发行版",
+ 	"Relevance": "相关性",
+@@ -2266,13 +2266,13 @@
+ 	"Reranking Batch Size": "重排序批次大小",
+ 	"Reranking Engine": "重新排名引擎",
+ 	"Reranking Model": "重新排名模型",
+-	"Research Knowledge": "研究知识库",
++	"Research Knowledge": "研究文献资料库",
+ 	"Reset": "重置",
+ 	"Reset All Models": "重置所有模型",
+ 	"Reset all permissions to their initial configuration values": "将所有权限重置为初始配置值",
+ 	"Reset Defaults": "重置默认值",
+ 	"Reset group permissions to match the current default user permissions": "重置组权限以匹配当前默认用户权限",
+-	"Reset knowledge base?": "确定要重置知识库吗？",
++	"Reset knowledge base?": "确定要重置文献资料库吗？",
+ 	"Reset persisted files": "重置已保存文件",
+ 	"Reset to Defaults": "重置为默认值",
+ 	"Reset Upload Directory": "重置上传目录",
+@@ -2342,12 +2342,12 @@
+ 	"Search actions": "搜索操作",
+ 	"Search all emojis": "搜索 Emoji",
+ 	"Search and manage user memories": "搜索和管理用户记忆",
+-	"Search and view user chat history": "搜索和查看用户对话历史",
++	"Search and view user chat history": "搜索和查看用户科研任务记录",
+ 	"Search Automations": "搜索自动化任务",
+ 	"Search Base": "搜索库",
+ 	"Search channels": "搜索频道",
+ 	"Search channels and channel messages": "搜索频道和频道消息",
+-	"Search Chats": "搜索对话",
++	"Search Chats": "搜索科研任务",
+ 	"Search Collection": "搜索内容",
+ 	"Search Files": "搜索文件",
+ 	"Search files and contents": "搜索文件和内容",
+@@ -2362,11 +2362,11 @@
+ 	"Search Functions": "搜索函数",
+ 	"Search Groups": "搜索用户组",
+ 	"Search In Models": "搜索模型",
+-	"Search Knowledge": "搜索知识",
++	"Search Knowledge": "搜索文献资料",
+ 	"Search Limits": "搜索限制",
+ 	"Search Memories": "搜索记忆",
+ 	"Search Models": "搜索模型",
+-	"Search Notes": "搜索笔记",
++	"Search Notes": "搜索研究笔记",
+ 	"Search options": "搜索选项",
+ 	"Search or add pattern": "搜索或添加模式",
+ 	"Search Prompts": "搜索提示词",
+@@ -2378,7 +2378,7 @@
+ 	"Search tools": "搜索工具",
+ 	"Search Tools": "搜索工具",
+ 	"Search users or groups": "搜索用户或组",
+-	"Search, view, and manage user notes": "搜索、查看和管理用户笔记",
++	"Search, view, and manage user notes": "搜索、查看和管理用户研究笔记",
+ 	"SearchApi API Key": "SearchApi 接口密钥",
+ 	"SearchApi Engine": "SearchApi 引擎",
+ 	"Searched {{count}} sites": "已搜索 {{count}} 个网站",
+@@ -2484,12 +2484,12 @@
+ 	"Set reranking model (e.g. {{model}})": "设置重排序模型（例如：{{model}}）",
+ 	"Set system-wide interface defaults for every account. Personal settings override these defaults.": "为每个账户设置系统级界面默认值。个人设置将覆盖这些默认值。",
+ 	"Set the birth date saved with your profile.": "设置保存在您个人资料中的出生日期。",
+-	"Set the default system prompt for new chats.": "设置新对话的默认系统提示词。",
++	"Set the default system prompt for new chats.": "设置新科研任务的默认系统提示词。",
+ 	"Set the display name shown across your account.": "设置您账户中显示的显示名。",
+ 	"Set the number of layers, which will be off-loaded to GPU. Increasing this value can significantly improve performance for models that are optimized for GPU acceleration but may also consume more power and GPU resources.": "设置将加载到 GPU 的层数。增加此值可以显著提高对 GPU 加速优化的模型性能，但也可能占用更多 GPU 资源，增加功耗。",
+ 	"Set the number of worker threads used for computation. This option controls how many threads are used to process incoming requests concurrently. Increasing this value can improve performance under high concurrency workloads but may also consume more CPU resources.": "设置用于计算的工作线程数量。该选项可控制并发处理传入请求的线程数量。增加该值可以提高高并发工作负载下的性能，但也可能消耗更多的 CPU 资源。",
+ 	"Set Voice": "设置音色",
+-	"Set web search availability for new chats.": "设置新对话的网络搜索可用性。",
++	"Set web search availability for new chats.": "设置新科研任务的网络搜索可用性。",
+ 	"Set whisper model": "设置 whisper 模型",
+ 	"Set your status": "设置您的状态",
+ 	"Sets a flat bias against tokens that have appeared at least once. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. At 0, it is disabled.": "对至少出现过一次的标记设置固定偏置值。较高的值（例如 1.5）表示严厉惩罚重复，而较低的值（例如 0.9）则表示相对宽松。当值为 0 时，此功能将被禁用。",
+@@ -2589,8 +2589,8 @@
+ 	"Speech-to-Text Language": "语音转文字的语言",
+ 	"Split documents by markdown headers before character or token splitting.": "在字符或 token 切割之前，按 markdown 标题分割文档。",
+ 	"Sponsor on GitHub": "在 GitHub 上赞助",
+-	"Start a new conversation": "开始新对话",
+-	"Start new chats as temporary unless changed.": "默认创建临时对话，除非更改设置。",
++	"Start a new conversation": "开始新科研任务",
++	"Start new chats as temporary unless changed.": "默认创建临时科研任务，除非更改设置。",
+ 	"Start of the channel": "频道起点",
+ 	"Start Tag": "起始标签",
+ 	"Start the chat to use this terminal.": "开始对话以使用此终端。",
+@@ -2631,10 +2631,10 @@
+ 	"Suggest a change": "提出修改建议",
+ 	"Suggest completions while composing prompts.": "在编辑提示词时提供补全建议。",
+ 	"Suggest completions while users type chat messages.": "在用户输入对话消息时提供补全建议。",
+-	"Suggested": "建议",
++	"Suggested": "科研任务建议",
+ 	"Suggested prompts": "建议的提示词",
+-	"Summarize older chat history when the conversation context grows large.": "当对话上下文过大时，摘要成更旧的对话历史。",
+-	"Summarize this note.": "摘要此笔记。",
++	"Summarize older chat history when the conversation context grows large.": "当对话上下文过大时，摘要成更旧的科研任务记录。",
++	"Summarize this note.": "摘要此研究笔记。",
+ 	"Support": "支持",
+ 	"Support this plugin:": "支持此插件",
+ 	"Supported Media MIME Types": "支持的媒体 MIME 类型",
+@@ -2643,7 +2643,7 @@
+ 	"Switch to JSON editor": "切换到 JSON 编辑器",
+ 	"Switch to visual editor": "切换到可视化编辑器",
+ 	"Sync": "同步",
+-	"Sync a local directory with this knowledge base. Only new and modified files will be uploaded. The directory structure will be mirrored.": "将本地目录与此知识库同步。仅会上传新增和已修改的文件，并镜像目录结构。",
++	"Sync a local directory with this knowledge base. Only new and modified files will be uploaded. The directory structure will be mirrored.": "将本地目录与此文献资料库同步。仅会上传新增和已修改的文件，并镜像目录结构。",
+ 	"Sync complete: {{added}} added, {{modified}} modified, {{deleted}} deleted, {{unmodified}} unmodified": "同步完成：新增 {{added}} 个，修改 {{modified}} 个，删除 {{deleted}} 个，未变更 {{unmodified}} 个",
+ 	"Sync Complete!": "同步完成！",
+ 	"Sync directory": "同步目录",
+@@ -2677,8 +2677,8 @@
+ 	"Tavily Extract Depth": "Tavily 提取深度",
+ 	"Tell us more:": "请告诉我们更多细节",
+ 	"Temperature": "温度 (Temperature)",
+-	"Temporary Chat": "临时对话",
+-	"Temporary Chat by Default": "默认使用临时对话",
++	"Temporary Chat": "临时科研任务",
++	"Temporary Chat by Default": "默认使用临时科研任务",
+ 	"Terminal": "终端",
+ 	"Terminal Contexts": "终端上下文",
+ 	"Terminal File Display": "终端文件显示",
+@@ -2724,7 +2724,7 @@
+ 	"This folder is empty": "此文件夹为空",
+ 	"This is a default user permission and will remain enabled.": "此权限已在默认用户配置中启用，当前会始终生效。",
+ 	"This is an experimental feature, it may not function as expected and is subject to change at any time.": "这是一项实验性功能，可能无法按预期运行，也可能会随时发生变化。",
+-	"This knowledge base retrieves from a connected source. Open WebUI can query it, but cannot upload, sync, edit, delete, reset, or reindex its source data.": "此知识库从已连接的源检索数据。Open WebUI 可以查询它，但无法上传、同步、编辑、删除、重置或重建其源数据的索引。",
++	"This knowledge base retrieves from a connected source. Open WebUI can query it, but cannot upload, sync, edit, delete, reset, or reindex its source data.": "此文献资料库从已连接的源检索数据。Open WebUI 可以查询它，但无法上传、同步、编辑、删除、重置或重建其源数据的索引。",
+ 	"This model is not publicly available. Please select another model.": "此模型未公开。请选择其他模型",
+ 	"This option controls how long the model will stay loaded into memory following the request (default: 5m)": "此选项用于控制模型在收到请求后，保持常驻内存的时长（默认：5 分钟）",
+ 	"This option controls how many tokens are preserved when refreshing the context. For example, if set to 2, the last 2 tokens of the conversation context will be retained. Preserving context can help maintain the continuity of a conversation, but it may reduce the ability to respond to new topics.": "此选项控制刷新上下文时保留多少 Token。例如，如果设置为 2，则将保留对话上下文的最后 2 个 Token。保留上下文有助于保持对话的连续性，但可能会降低响应新主题的能力。",
+@@ -2737,7 +2737,7 @@
+ 	"This will delete all models including custom models and cannot be undone.": "这将删除所有模型，包括自定义模型，且无法撤销。",
+ 	"This will delete the cached model and cannot be undone.": "这将删除缓存的模型，此操作无法撤销。",
+ 	"This will permanently delete the calendar \"{{name}}\" and all its events. This action cannot be undone.": "这将永久删除日程“{{name}}”及其所有事件。此操作无法撤销。",
+-	"This will remove all files and directories from this knowledge base. This action cannot be undone.": "这将移除此知识库中的所有文件和目录。此操作无法撤销。",
++	"This will remove all files and directories from this knowledge base. This action cannot be undone.": "这将移除此文献资料库中的所有文件和目录。此操作无法撤销。",
+ 	"This will revoke the current API key.": "这将撤销当前的 API 密钥。",
+ 	"Thorough explanation": "解释详尽",
+ 	"Thought": "思考过程",
+@@ -2770,14 +2770,14 @@
+ 	"To access the available model names for downloading,": "访问可下载的模型名称，",
+ 	"To access the GGUF models available for downloading,": "访问可下载的 GGUF 模型，",
+ 	"To access the WebUI, please reach out to the administrator. Admins can manage user statuses from the Admin Panel.": "请联系管理员获取访问权限。管理员可以在后台管理面板中管理用户状态。",
+-	"To attach knowledge base here, add them to the \"Knowledge\" workspace first.": "如需在此处附加知识库，请先将其添加到工作空间中的“知识库”中",
++	"To attach knowledge base here, add them to the \"Knowledge\" workspace first.": "如需在此处附加文献资料库，请先将其添加到科研资源中的“文献资料库”中",
+ 	"To learn more about available endpoints, visit our documentation.": "如需了解更多关于可用端点的信息，请访问我们的文档",
+ 	"To learn more about SpeechT5,": "要了解更多关于 SpeechT5 的信息，",
+ 	"To see the available CMU Arctic speaker embeddings,": "要查看可用的 CMU Arctic 语音嵌入，",
+ 	"To select actions here, add them to the \"Functions\" workspace first.": "要在此处选择操作，请先将它们添加到“函数”工作区。",
+ 	"To select default filters here, enable toggleable filters for this model first.": "要在此处选择默认过滤器，请先为此模型启用可切换的过滤器。",
+ 	"To select filters here, add them to the \"Functions\" workspace first.": "要在此处选择过滤器，请先将它们添加到“函数”工作区。",
+-	"To select skills here, add them to the \"Skills\" workspace first.": "若要在此选择技能，请先将其添加到“技能”工作空间中",
++	"To select skills here, add them to the \"Skills\" workspace first.": "若要在此选择技能，请先将其添加到“技能”科研资源中",
+ 	"To select toolkits here, add them to the \"Tools\" workspace or enable a tool server first.": "要在此处选择工具包，请先将它们添加到“工具”工作区或启用工具服务器。",
+ 	"Toast Notifications for New Updates": "检测到新版本时显示更新通知",
+ 	"Today": "今天",
+@@ -3042,8 +3042,8 @@
+ 	"Won": "更好",
+ 	"Working Directory": "工作目录",
+ 	"Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.": "与 top-k 配合使用。较高的值（例如 0.95）将产生更加多样化的文本，而较低的值（例如 0.5）将产生更加聚焦和保守的文本。",
+-	"Workspace": "工作空间",
+-	"Workspace Permissions": "工作空间权限",
++	"Workspace": "科研资源",
++	"Workspace Permissions": "科研资源权限",
+ 	"Write": "可写",
+ 	"Write a summary in 50 words that summarizes {{topic}}.": "用 50 个字写一份总结 [主题或关键词]",
+ 	"Write something...": "写点什么……",
+@@ -3071,7 +3071,7 @@
+ 	"You do not have permission to make this public": "您没有权限将其公开",
+ 	"You do not have permission to send messages in this channel.": "您没有权限在当前频道发送消息。",
+ 	"You do not have permission to send messages in this thread.": "您没有权限在当前主题中发送消息。",
+-	"You do not have permission to upload files to this knowledge base.": "您没有权限上传文件到此知识库。",
++	"You do not have permission to upload files to this knowledge base.": "您没有权限上传文件到此文献资料库。",
+ 	"You do not have permission to upload files.": "您没有上传文件的权限。",
+ 	"You do not have permission to upload web content.": "您没有上传文件的权限。",
+ 	"You have more than 50 users, which often means this workspace is supporting organizational use. Open WebUI is free to use as-is, with no restrictions or hidden limits, and we want to keep it that way.": "您有超过 50 名用户，这通常意味着此工作区支持组织级使用。Open WebUI 免费使用，无任何限制或隐藏限制，我们希望保持这样。",
+--- /dev/null
++++ b/src/lib/utils/screen-capture.js
+@@ -0,0 +1,42 @@
++// Shared by source builds and the pinned production bundle overlay.
++export async function captureScreenshot(onFiles, toast) {
++    if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
++        toast.info('当前连接或浏览器不支持直接截屏。可选择已有截图，或使用系统截图后按 Ctrl+V 粘贴；直接截屏需通过 HTTPS 或 localhost 打开。');
++        const picker = document.createElement('input');
++        picker.type = 'file';
++        picker.accept = 'image/*';
++        picker.onchange = () => {
++            if (picker.files?.length) onFiles(Array.from(picker.files));
++        };
++        picker.click();
++        return;
++    }
++    let stream;
++    let video;
++    try {
++        stream = await navigator.mediaDevices.getDisplayMedia({video: true, audio: false});
++        video = document.createElement('video');
++        video.srcObject = stream;
++        await video.play();
++        const canvas = document.createElement('canvas');
++        canvas.width = video.videoWidth;
++        canvas.height = video.videoHeight;
++        if (!canvas.width || !canvas.height) throw new Error('Empty capture');
++        const context = canvas.getContext('2d');
++        if (!context) throw new Error('Canvas unavailable');
++        context.drawImage(video, 0, 0, canvas.width, canvas.height);
++        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
++        if (!blob) throw new Error('Image encoding failed');
++        await onFiles([new File([blob], `screen-capture-${Date.now()}.png`, {type: 'image/png'})]);
++        window.focus();
++    } catch (error) {
++        if (error?.name === 'NotAllowedError' || error?.name === 'AbortError') {
++            toast.info('已取消截屏或未获得屏幕共享权限。可以再次点击截图，或粘贴已有截图。');
++        } else {
++            toast.error('截屏失败。请重试，或使用系统截图后粘贴、上传截图文件。');
++        }
++    } finally {
++        stream?.getTracks().forEach(track => track.stop());
++        if (video) video.srcObject = null;
++    }
++}
+--- a/src/lib/components/chat/MessageInput.svelte
++++ b/src/lib/components/chat/MessageInput.svelte
+@@ -1,4 +1,5 @@
+ <script lang="ts">
++	import { captureScreenshot } from "$lib/utils/screen-capture.js";
+ 	import DOMPurify from 'dompurify';
+ 	import { toast } from 'svelte-sonner';
+ 
+@@ -838,43 +839,7 @@
+ 		});
+ 	};
+ 
+-	const screenCaptureHandler = async () => {
+-		try {
+-			// Request screen media
+-			const mediaStream = await navigator.mediaDevices.getDisplayMedia({
+-				video: { cursor: 'never' },
+-				audio: false
+-			});
+-			// Once the user selects a screen, temporarily create a video element
+-			const video = document.createElement('video');
+-			video.srcObject = mediaStream;
+-			// Ensure the video loads without affecting user experience or tab switching
+-			await video.play();
+-			// Set up the canvas to match the video dimensions
+-			const canvas = document.createElement('canvas');
+-			canvas.width = video.videoWidth;
+-			canvas.height = video.videoHeight;
+-			// Grab a single frame from the video stream using the canvas
+-			const context = canvas.getContext('2d');
+-			context.drawImage(video, 0, 0, canvas.width, canvas.height);
+-			// Stop all video tracks (stop screen sharing) after capturing the image
+-			mediaStream.getTracks().forEach((track) => track.stop());
+-
+-			// bring back focus to this current tab, so that the user can see the screen capture
+-			window.focus();
+-
+-			// Convert the canvas to a Base64 image URL
+-			const imageUrl = canvas.toDataURL('image/png');
+-			const blob = await (await fetch(imageUrl)).blob();
+-			const file = new File([blob], `screen-capture-${Date.now()}.png`, { type: 'image/png' });
+-			inputFilesHandler([file]);
+-			// Clean memory: Clear video srcObject
+-			video.srcObject = null;
+-		} catch (error) {
+-			// Handle any errors (e.g., user cancels screen sharing)
+-			console.error('Error capturing screen:', error);
+-		}
+-	};
++	const screenCaptureHandler = () => captureScreenshot(inputFilesHandler, toast);
+ 
+ 	const getFilesystemUploadTerminal = (
+ 		selectedId = $selectedTerminalId,
+--- a/src/lib/components/channel/MessageInput.svelte
++++ b/src/lib/components/channel/MessageInput.svelte
+@@ -1,4 +1,5 @@
+ <script lang="ts">
++	import { captureScreenshot } from "$lib/utils/screen-capture.js";
+ 	import { toast } from 'svelte-sonner';
+ 	import { v4 as uuidv4 } from 'uuid';
+ 
+@@ -314,43 +315,7 @@
+ 	$: showCommands = ['/'].includes(command?.charAt(0));
+ 	let suggestions = null;
+ 
+-	const screenCaptureHandler = async () => {
+-		try {
+-			// Request screen media
+-			const mediaStream = await navigator.mediaDevices.getDisplayMedia({
+-				video: { cursor: 'never' },
+-				audio: false
+-			});
+-			// Once the user selects a screen, temporarily create a video element
+-			const video = document.createElement('video');
+-			video.srcObject = mediaStream;
+-			// Ensure the video loads without affecting user experience or tab switching
+-			await video.play();
+-			// Set up the canvas to match the video dimensions
+-			const canvas = document.createElement('canvas');
+-			canvas.width = video.videoWidth;
+-			canvas.height = video.videoHeight;
+-			// Grab a single frame from the video stream using the canvas
+-			const context = canvas.getContext('2d');
+-			context.drawImage(video, 0, 0, canvas.width, canvas.height);
+-			// Stop all video tracks (stop screen sharing) after capturing the image
+-			mediaStream.getTracks().forEach((track) => track.stop());
+-
+-			// bring back focus to this current tab, so that the user can see the screen capture
+-			window.focus();
+-
+-			// Convert the canvas to a Base64 image URL
+-			const imageUrl = canvas.toDataURL('image/png');
+-			const blob = await (await fetch(imageUrl)).blob();
+-			const file = new File([blob], `screen-capture-${Date.now()}.png`, { type: 'image/png' });
+-			inputFilesHandler([file]);
+-			// Clean memory: Clear video srcObject
+-			video.srcObject = null;
+-		} catch (error) {
+-			// Handle any errors (e.g., user cancels screen sharing)
+-			console.error('Error capturing screen:', error);
+-		}
+-	};
++	const screenCaptureHandler = () => captureScreenshot(inputFilesHandler, toast);
+ 
+ 	const inputFilesHandler = async (inputFiles) => {
+ 		inputFiles.forEach(async (file) => {
+--- /dev/null
++++ b/src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte
+@@ -0,0 +1,114 @@
++<script lang="ts">
++  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
++  import Modal from '$lib/components/common/Modal.svelte';
++  export let show = true;
++  export let modelId = '';
++  const dispatch = createEventDispatcher();
++  let catalog: any = null;
++  let apiKey = '';
++  let endpointId = '';
++  let busy = false;
++  let error = '';
++  let secure = false;
++  $: selected = catalog?.models.find((m: any) => m.id === modelId);
++  $: provider = selected ? catalog.providers[selected.provider] : null;
++  $: configured = selected ? catalog.credentials[selected.provider]?.configured : false;
++
++  async function request(path: string, method = 'GET', body?: any) {
++    const response = await fetch('/api/workstation' + path, {
++      method, headers: { Authorization: `Bearer ${localStorage.token}`, 'Content-Type': 'application/json' },
++      ...(body ? { body: JSON.stringify(body) } : {})
++    });
++    const data = await response.json();
++    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : '操作失败，请重试。');
++    return data;
++  }
++  function chooseModel() {
++    apiKey = ''; error = '';
++    const model = catalog?.models.find((m: any) => m.id === modelId);
++    endpointId = model ? (catalog.credentials[model.provider]?.endpoint_id || catalog.providers[model.provider].endpoints[0].id) : '';
++  }
++  onMount(async () => {
++    secure = window.isSecureContext;
++    try {
++      catalog = await request('/catalog');
++      if (!catalog.models.some((m: any) => m.id === modelId)) modelId = catalog.models[0]?.id || '';
++      chooseModel();
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++  });
++  onDestroy(() => { apiKey = ''; });
++  async function save() {
++    if (!secure || !apiKey.trim() || busy) return;
++    busy = true; error = '';
++    try {
++      await request('/credentials', 'POST', {model_id: modelId, endpoint_id: endpointId, api_key: apiKey.trim()});
++      apiKey = ''; show = false; dispatch('ready', modelId);
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++    finally { busy = false; }
++  }
++  async function useSaved() {
++    busy = true; error = '';
++    try {
++      await request('/models/' + encodeURIComponent(modelId) + '/activate', 'POST');
++      show = false; dispatch('ready', modelId);
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++    finally { busy = false; }
++  }
++  async function remove() {
++    busy = true; error = '';
++    try {
++      await request('/credentials/' + selected.provider, 'DELETE');
++      catalog = await request('/catalog'); apiKey = ''; chooseModel();
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++    finally { busy = false; }
++  }
++</script>
++
++<Modal bind:show size="sm">
++  <div class="p-5 space-y-4" data-workstation-model-keys>
++    <div class="flex items-center justify-between">
++      <h2 class="text-xl font-semibold">模型与 API Key</h2>
++      <button type="button" aria-label="关闭模型配置" class="rounded-lg px-2 py-1" on:click={() => {show = false;}}>关闭</button>
++    </div>
++    <p class="text-sm text-gray-500">首次使用厂商模型时，填写你自己的 API Key。同一厂商可复用已配置的密钥，其他账号无法使用。</p>
++    {#if catalog}
++      <label class="block text-sm">选择模型
++        <select class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" bind:value={modelId} on:change={chooseModel} disabled={busy}>
++          {#each catalog.models as model}<option value={model.id}>{model.name}</option>{/each}
++        </select>
++      </label>
++      {#if selected && provider}
++        <p class="text-sm text-gray-500">{selected.description}</p>
++        <div class="flex items-center justify-between text-sm">
++          <span>{provider.name} · {configured ? '已配置' : '待配置'}</span>
++          <a class="underline" href={provider.key_url} target="_blank" rel="noopener noreferrer">获取 API Key</a>
++        </div>
++        <label class="block text-sm">接入区域
++          <select class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" bind:value={endpointId} disabled={busy}>
++            {#each provider.endpoints as endpoint}<option value={endpoint.id}>{endpoint.name}</option>{/each}
++          </select>
++        </label>
++        {#if !secure}
++          <div class="rounded-xl bg-amber-50 dark:bg-amber-950 p-3 text-sm" role="status">当前是 HTTP 连接。请通过工作站 HTTPS 地址或 localhost SSH 隧道填写 API Key；已有密钥的模型仍可选择使用。</div>
++        {/if}
++        <form on:submit|preventDefault={save} class="space-y-3">
++          <label class="block text-sm">{configured ? '更换 API Key' : 'API Key'}
++            <input class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" type="password" bind:value={apiKey} autocomplete="off" spellcheck="false" placeholder={configured ? '填写新密钥以替换' : '粘贴该厂商的 API Key'} disabled={!secure || busy} />
++          </label>
++          <p class="text-xs text-gray-500">密钥由本站加密保存，不写入聊天记录。验证会向所选模型发送一条简短请求。</p>
++          <button class="w-full rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black px-4 py-2 disabled:opacity-40" type="submit" disabled={!secure || !apiKey.trim() || busy}>{busy ? '正在验证…' : '保存并使用'}</button>
++        </form>
++        {#if configured}
++          <div class="flex gap-4 text-sm">
++            <button class="underline" disabled={busy} on:click={useSaved}>使用已保存的密钥</button>
++            <button class="text-red-600 underline" disabled={busy} on:click={remove}>删除此厂商密钥</button>
++          </div>
++        {/if}
++      {/if}
++      <p class="text-xs text-gray-400">目录核对日期：{catalog.checked_at}。实际可用模型取决于厂商区域和账号权限。</p>
++    {:else if !error}
++      <p class="text-sm">正在加载模型目录…</p>
++    {/if}
++    {#if error}<p role="alert" class="rounded-xl bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-200">{error}</p>{/if}
++  </div>
++</Modal>
+--- a/src/lib/components/chat/ModelSelector/Selector.svelte
++++ b/src/lib/components/chat/ModelSelector/Selector.svelte
+@@ -1,4 +1,7 @@
+ <script lang="ts">
++	import ModelKeyDialog from "./ModelKeyDialog.svelte";
++	let showModelKeys = false;
++	let pendingModel = "";
+ 	import { marked } from 'marked';
+ 	import Fuse from 'fuse.js';
+ 
+@@ -486,7 +489,7 @@
+ 		}
+ 	};
+ 
+-	const selectItem = (item, index: number) => {
++	const applyItem = (item, index: number) => {
+ 		selectedModelIdx = index;
+ 
+ 		if (values) {
+@@ -961,7 +964,22 @@
+ 		filteredItems.length,
+ 		Math.ceil((listScrollTop + listViewportHeight) / ITEM_HEIGHT) + OVERSCAN
+ 	);
++
++    const selectItem = async (item: (typeof items)[number], index: number) => {
++        if (item.value.startsWith('ws-') && !(compareEnabled && selectedValues.includes(item.value))) {
++            try {
++                const response = await fetch('/api/workstation/models/' + encodeURIComponent(item.value) + '/activate', {
++                    method: 'POST', headers: {Authorization: `Bearer ${localStorage.token}`}
++                });
++                if (response.status === 428) { pendingModel = item.value; show = false; showModelKeys = true; return; }
++                if (!response.ok) { const result = await response.json(); toast.error(typeof result.detail === 'string' ? result.detail : '模型验证失败'); return; }
++            } catch { toast.error('模型连接失败，请重试。'); return; }
++        }
++        applyItem(item, index);
++    };
++
+ </script>
++{#if showModelKeys}<ModelKeyDialog bind:show={showModelKeys} modelId={pendingModel} on:ready={(event) => { const item = items.find(i => i.value === event.detail); if (item) applyItem(item, items.indexOf(item)); }} />{/if}
+ 
+ <ConfirmDialog
+ 	bind:show={showDeleteConfirm}
+--- a/src/lib/components/chat/ModelSelector.svelte
++++ b/src/lib/components/chat/ModelSelector.svelte
+@@ -1,4 +1,6 @@
+ <script lang="ts">
++	import ModelKeyDialog from "./ModelSelector/ModelKeyDialog.svelte";
++	let showModelKeys = false;
+ 	import { models, pinnedModels, settings, user } from '$lib/stores';
+ 	import { getContext } from 'svelte';
+ 	import { toast } from 'svelte-sonner';
+@@ -58,6 +60,7 @@
+ 		compareModels = true;
+ 	}
+ </script>
++{#if showModelKeys}<ModelKeyDialog bind:show={showModelKeys} modelId={selectedModels[0]} on:ready={(event) => { selectedModels = [event.detail]; }} />{/if}
+ 
+ <div class="flex min-w-0 max-w-full flex-col items-start">
+ 	<div class="flex min-w-0 max-w-full">
+@@ -89,3 +92,5 @@
+ 		</div>
+ 	</div>
+ </div>
++
++<button type="button" class="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1" aria-label="管理模型 API Key" on:click={() => { showModelKeys = true; }}>模型密钥</button>
+--- /dev/null
++++ b/backend/open_webui/workstation_models/core.py
+@@ -0,0 +1,70 @@
++"""Credential persistence and signed runtime envelopes; no web framework dependency."""
++import base64
++import hashlib
++import json
++import os
++import sqlite3
++import time
++from contextlib import contextmanager
++from pathlib import Path
++from cryptography.fernet import Fernet
++
++def cipher(secret, purpose):
++    if not secret:
++        raise RuntimeError('Workstation secret is not configured')
++    return Fernet(base64.urlsafe_b64encode(hashlib.sha256((secret+purpose).encode()).digest()))
++
++class CredentialStore:
++    def __init__(self, path, secret):
++        self.path=Path(path)
++        self.path.parent.mkdir(parents=True,exist_ok=True)
++        self.cipher=cipher(secret,'/workstation-credentials/v1')
++        with self.connect() as db:
++            db.execute('CREATE TABLE IF NOT EXISTS credentials (user_id TEXT NOT NULL, provider TEXT NOT NULL, endpoint TEXT NOT NULL, secret TEXT NOT NULL, validated TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(user_id,provider,endpoint))')
++            db.execute('CREATE TABLE IF NOT EXISTS active (user_id TEXT NOT NULL, provider TEXT NOT NULL, endpoint TEXT NOT NULL, PRIMARY KEY(user_id,provider))')
++        self.path.chmod(0o600)
++
++    @contextmanager
++    def connect(self):
++        db=sqlite3.connect(self.path,timeout=10)
++        try:
++            with db:yield db
++        finally:db.close()
++
++    def put(self,user_id,provider,endpoint,key,model_id):
++        # User/provider/endpoint are authenticated inside the ciphertext too.
++        payload=json.dumps({'user_id':user_id,'provider':provider,'endpoint':endpoint,'key':key})
++        encrypted=self.cipher.encrypt(payload.encode()).decode()
++        with self.connect() as db:
++            db.execute('INSERT OR REPLACE INTO credentials VALUES (?,?,?,?,?,?)',
++                       (user_id,provider,endpoint,encrypted,json.dumps([model_id]),int(time.time())))
++            db.execute('INSERT OR REPLACE INTO active VALUES (?,?,?)',(user_id,provider,endpoint))
++
++    def get(self,user_id,provider):
++        with self.connect() as db:
++            row=db.execute('SELECT c.endpoint,c.secret,c.validated FROM credentials c JOIN active a ON c.user_id=a.user_id AND c.provider=a.provider AND c.endpoint=a.endpoint WHERE c.user_id=? AND c.provider=?',(user_id,provider)).fetchone()
++        if not row:return None
++        payload=json.loads(self.cipher.decrypt(row[1].encode()))
++        if (payload['user_id'],payload['provider'],payload['endpoint'])!=(user_id,provider,row[0]):
++            raise ValueError('Credential ownership mismatch')
++        return {'endpoint':row[0],'key':payload['key'],'validated':json.loads(row[2])}
++
++    def mark_validated(self,user_id,provider,model_id):
++        entry=self.get(user_id,provider)
++        if entry:
++            with self.connect() as db:
++                db.execute('UPDATE credentials SET validated=? WHERE user_id=? AND provider=? AND endpoint=?',
++                           (json.dumps(sorted(set(entry['validated']+[model_id]))),user_id,provider,entry['endpoint']))
++
++    def delete(self,user_id,provider):
++        with self.connect() as db:
++            db.execute('DELETE FROM credentials WHERE user_id=? AND provider=?',(user_id,provider))
++            db.execute('DELETE FROM active WHERE user_id=? AND provider=?',(user_id,provider))
++
++def runtime_envelope(secret, *, model, endpoint, key, scope):
++    payload={'model':model,'base_url':endpoint,'api_key':key,'scope':scope}
++    return cipher(secret,'/workstation-runtime/v1').encrypt(json.dumps(payload).encode()).decode()
++
++def session_scope(user_id,model_id,chat_id,first_message):
++    payload=json.dumps([user_id,model_id,chat_id or '',first_message if not chat_id else ''],ensure_ascii=False,sort_keys=True)
++    return 'ws-'+hashlib.sha256(payload.encode()).hexdigest()[:48]
+--- /dev/null
++++ b/backend/open_webui/workstation_models/router.py
+@@ -0,0 +1,148 @@
++"""Authenticated catalog/key APIs and the account-specific Agent bridge."""
++import asyncio
++from collections import defaultdict,deque
++import json
++import os
++from pathlib import Path
++import time
++import httpx
++from fastapi import APIRouter,Depends,HTTPException,Request
++from fastapi.exceptions import RequestValidationError
++from fastapi.routing import APIRoute
++from fastapi.responses import JSONResponse,StreamingResponse
++from pydantic import BaseModel,Field,SecretStr
++from open_webui.utils.auth import get_verified_user
++from .core import CredentialStore,runtime_envelope,session_scope
++
++class PrivateValidationRoute(APIRoute):
++    def get_route_handler(self):
++        handler=super().get_route_handler()
++        async def guarded(request):
++            try:return await handler(request)
++            except RequestValidationError:
++                return JSONResponse({'detail':'请检查模型、接入区域和 API Key 的格式。'},status_code=422)
++        return guarded
++
++router=APIRouter(route_class=PrivateValidationRoute)
++CATALOG=json.loads((Path(__file__).parent/'catalog.json').read_text())
++MODELS={m['id']:m for m in CATALOG['models']}
++_store=None
++_attempts=defaultdict(deque)
++
++def store():
++    global _store
++    if _store is None:
++        _store=CredentialStore(Path(os.environ.get('DATA_DIR','/app/backend/data'))/'workstation-credentials.db',os.environ.get('WEBUI_SECRET_KEY',''))
++    return _store
++
++def model_info(model_id):
++    if model_id not in MODELS:raise HTTPException(404,'未找到该科研模型，请刷新模型目录。')
++    return MODELS[model_id]
++
++def endpoint_info(provider,endpoint_id):
++    endpoints=CATALOG['providers'][provider]['endpoints']
++    entry=next((e for e in endpoints if e['id']==endpoint_id),None)
++    if not entry:raise HTTPException(400,'请选择该厂商支持的接入区域。')
++    return entry
++
++def secure_key_entry(request):
++    if request.url.scheme!='https' and request.url.hostname not in ('localhost','127.0.0.1','::1'):
++        raise HTTPException(400,'API Key 请通过 HTTPS 或 localhost 安全入口配置。')
++
++def rate_limit(user_id):
++    now=time.monotonic();items=_attempts[user_id]
++    while items and now-items[0]>60:items.popleft()
++    if len(items)>=6:raise HTTPException(429,'验证次数较多，请稍后重试。')
++    items.append(now)
++
++async def validate(model,endpoint,key):
++    payload={'model':model['upstream_id'],'messages':[{'role':'user','content':'Reply OK.'}],'max_tokens':16,'stream':False}
++    if model['provider']=='qwen':payload['enable_thinking']=False
++    if model['provider']=='deepseek':payload['thinking']={'type':'disabled'}
++    if model['upstream_id']=='kimi-k3':payload['reasoning_effort']='low'
++    try:
++        async with httpx.AsyncClient(timeout=httpx.Timeout(40,connect=10),follow_redirects=False,trust_env=False) as c:
++            response=await c.post(endpoint['url']+'/chat/completions',headers={'Authorization':'Bearer '+key},json=payload)
++    except httpx.HTTPError:
++        raise HTTPException(502,'连接厂商超时或失败，请检查接入区域后重试。') from None
++    if response.status_code in (401,403):raise HTTPException(400,'API Key 无效或无访问权限，请检查密钥和接入区域。')
++    if response.status_code in (402,429):raise HTTPException(400,'该账号余额、配额或请求频率受限，请在厂商控制台检查。')
++    if response.status_code==404:raise HTTPException(400,'该接入区域尚不可用此模型，请开通模型权限或选择其他模型。')
++    if response.status_code!=200:raise HTTPException(502,'厂商未接受验证请求，请确认该模型的访问权限并稍后重试。')
++    try:
++        result=response.json()
++        if not isinstance(result.get('choices'),list) or not result['choices']:raise ValueError()
++    except (ValueError,AttributeError):raise HTTPException(502,'厂商返回了无法识别的验证结果。') from None
++
++@router.get('/catalog')
++async def catalog(user=Depends(get_verified_user)):
++    states={}
++    for provider in CATALOG['providers']:
++        entry=await asyncio.to_thread(store().get,user.id,provider)
++        states[provider]={'configured':bool(entry),'endpoint_id':entry['endpoint'] if entry else None}
++    return {**CATALOG,'credentials':states}
++
++class KeyForm(BaseModel):
++    model_id:str
++    endpoint_id:str
++    api_key:SecretStr=Field(min_length=8,max_length=4096)
++
++@router.post('/credentials')
++async def save_key(form:KeyForm,request:Request,user=Depends(get_verified_user)):
++    secure_key_entry(request);rate_limit(user.id)
++    model=model_info(form.model_id);endpoint=endpoint_info(model['provider'],form.endpoint_id)
++    key=form.api_key.get_secret_value().strip()
++    if any(c in key for c in '\r\n\x00'):raise HTTPException(400,'API Key 格式不正确。')
++    await validate(model,endpoint,key)
++    await asyncio.to_thread(store().put,user.id,model['provider'],form.endpoint_id,key,model['id'])
++    return {'configured':True,'provider':model['provider'],'endpoint_id':form.endpoint_id}
++
++@router.post('/models/{model_id}/activate')
++async def activate(model_id:str,user=Depends(get_verified_user)):
++    model=model_info(model_id)
++    entry=await asyncio.to_thread(store().get,user.id,model['provider'])
++    if not entry:raise HTTPException(428,'首次使用此厂商，请配置你的 API Key。')
++    if model_id not in entry['validated']:
++        rate_limit(user.id)
++        await validate(model,endpoint_info(model['provider'],entry['endpoint']),entry['key'])
++        await asyncio.to_thread(store().mark_validated,user.id,model['provider'],model_id)
++    return {'ready':True,'model_id':model_id}
++
++@router.delete('/credentials/{provider}')
++async def delete_key(provider:str,user=Depends(get_verified_user)):
++    if provider not in CATALOG['providers']:raise HTTPException(404,'厂商不存在。')
++    await asyncio.to_thread(store().delete,user.id,provider)
++    return {'deleted':True}
++
++async def generate_chat(request,form_data,user):
++    model=model_info(form_data['model'])
++    entry=await asyncio.to_thread(store().get,user.id,model['provider'])
++    if not entry:raise HTTPException(428,'请先在模型选择器中配置此厂商的 API Key。')
++    endpoint=endpoint_info(model['provider'],entry['endpoint'])
++    messages=form_data.get('messages',[])
++    first=next((m.get('content','') for m in messages if m.get('role')=='user'),'')
++    metadata=form_data.get('metadata') or {}
++    scope=session_scope(user.id,model['id'],metadata.get('chat_id'),first)
++    internal_key=os.environ.get('WORKSTATION_AGENT_KEY') or os.environ.get('OPENAI_API_KEY','')
++    envelope=runtime_envelope(internal_key,model=model['upstream_id'],endpoint=endpoint['url'],key=entry['key'],scope=scope)
++    # Whitelist forwarded fields; never forward caller-supplied routing/credential data.
++    payload={'model':model['id'],'messages':messages,'stream':bool(form_data.get('stream')),'_workstation_runtime':envelope}
++    client=httpx.AsyncClient(timeout=httpx.Timeout(600,connect=10),trust_env=False)
++    try:
++        response=await client.send(client.build_request('POST','http://127.0.0.1:8642/v1/chat/completions',json=payload,
++            headers={'Authorization':'Bearer '+internal_key,'X-Hermes-Session-Key':scope}),stream=True)
++        if response.status_code!=200:
++            await response.aclose();await client.aclose()
++            raise HTTPException(502,'所选模型调用失败，请检查 API Key、余额或模型权限。')
++        if not payload['stream']:
++            data=json.loads(await response.aread());await response.aclose();await client.aclose()
++            return JSONResponse(data)
++    except httpx.HTTPError:
++        await client.aclose()
++        raise HTTPException(502,'科研助手连接失败，请稍后重试。') from None
++    async def stream():
++        try:
++            async for chunk in response.aiter_bytes():yield chunk
++        finally:
++            await response.aclose();await client.aclose()
++    return StreamingResponse(stream(),media_type='text/event-stream')
+--- /dev/null
++++ b/backend/open_webui/workstation_models/__init__.py
+@@ -0,0 +1 @@
++"""Account-scoped research model selection and credentials."""
+--- /dev/null
++++ b/backend/open_webui/workstation_models/catalog.json
+@@ -0,0 +1,21 @@
++{
++  "checked_at": "2026-09-08",
++  "providers": {
++    "qwen": {"name":"Qwen · 阿里云百炼","key_url":"https://bailian.console.aliyun.com/","docs_url":"https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope","endpoints":[{"id":"cn","name":"中国大陆（北京）","url":"https://dashscope.aliyuncs.com/compatible-mode/v1"},{"id":"intl","name":"国际（新加坡）","url":"https://dashscope-intl.aliyuncs.com/compatible-mode/v1"}]},
++    "kimi": {"name":"Kimi · 月之暗面","key_url":"https://platform.kimi.com/","docs_url":"https://platform.kimi.com/docs/models","endpoints":[{"id":"cn","name":"中国大陆","url":"https://api.moonshot.cn/v1"},{"id":"intl","name":"国际","url":"https://api.moonshot.ai/v1"}]},
++    "deepseek": {"name":"DeepSeek","key_url":"https://platform.deepseek.com/api_keys","docs_url":"https://api-docs.deepseek.com/","endpoints":[{"id":"official","name":"官方 API","url":"https://api.deepseek.com/v1"}]},
++    "glm": {"name":"GLM · 智谱","key_url":"https://open.bigmodel.cn/","docs_url":"https://github.com/zai-org/GLM-5","endpoints":[{"id":"cn","name":"智谱开放平台","url":"https://open.bigmodel.cn/api/paas/v4"},{"id":"intl","name":"Z.ai 国际平台","url":"https://api.z.ai/api/paas/v4"}]}
++  },
++  "models": [
++    {"id":"ws-qwen3.8-max","name":"Qwen3.8 Max","provider":"qwen","upstream_id":"qwen3.8-max","vision":true,"description":"旗舰通用模型 · 科研分析、代码与图像理解"},
++    {"id":"ws-qwen3.8-flash","name":"Qwen3.8 Flash","provider":"qwen","upstream_id":"qwen3.8-flash","vision":true,"description":"快速通用模型 · 高频问答与资料整理"},
++    {"id":"ws-kimi-k3","name":"Kimi K3","provider":"kimi","upstream_id":"kimi-k3","vision":true,"description":"旗舰长上下文模型 · 知识工作与深度推理"},
++    {"id":"ws-kimi-k2.7-code","name":"Kimi K2.7 Code","provider":"kimi","upstream_id":"kimi-k2.7-code","vision":true,"description":"编程模型 · 实验代码与长程开发任务"},
++    {"id":"ws-deepseek-v4-pro","name":"DeepSeek V4 Pro","provider":"deepseek","upstream_id":"deepseek-v4-pro","vision":false,"description":"旗舰推理模型 · 复杂分析与科研写作"},
++    {"id":"ws-deepseek-v4-flash","name":"DeepSeek V4 Flash","provider":"deepseek","upstream_id":"deepseek-v4-flash","vision":false,"description":"快速文本模型 · 日常科研任务"},
++    {"id":"ws-deepseek-v4-flash-vision-exp","name":"DeepSeek V4 Flash Vision · 实验版","provider":"deepseek","upstream_id":"deepseek-v4-flash-vision-exp","vision":true,"description":"实验性视觉模型 · 图像与截图理解"},
++    {"id":"ws-glm-5.3","name":"GLM-5.3","provider":"glm","upstream_id":"glm-5.3","vision":false,"description":"旗舰模型 · 编程与长程任务"},
++    {"id":"ws-glm-5.3-flash","name":"GLM-5.3 Flash","provider":"glm","upstream_id":"glm-5.3-flash","vision":true,"description":"快速多模态模型 · 文本与图像任务"},
++    {"id":"ws-glm-5.2","name":"GLM-5.2","provider":"glm","upstream_id":"glm-5.2","vision":false,"description":"长上下文推理模型 · 大篇幅资料分析"}
++  ]
++}
+--- a/backend/open_webui/main.py
++++ b/backend/open_webui/main.py
+@@ -817,6 +817,9 @@
+ app.mount('/ws', socket_app)
+ 
+ 
++from open_webui.workstation_models.router import router as workstation_models_router
++app.include_router(workstation_models_router, prefix='/api/workstation', tags=['workstation'])
++
+ app.include_router(ollama.router, prefix='/ollama', tags=['ollama'])
+ app.include_router(openai.router, prefix='/openai', tags=['openai'])
+ 
+--- a/backend/open_webui/utils/chat.py
++++ b/backend/open_webui/utils/chat.py
+@@ -204,6 +204,10 @@
+                 await check_model_access(user, model)
+             except Exception as e:
+                 raise e
++
++        if model_id.startswith('ws-'):
++            from open_webui.workstation_models.router import generate_chat
++            return await generate_chat(request, form_data, user)
+ 
+         # Arena model — sub-model was already resolved by process_chat_payload.
+         # Inject selected_model_id into the response for the frontend.

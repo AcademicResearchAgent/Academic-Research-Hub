@@ -1,0 +1,28 @@
+# Upstream checkouts are reconstructed from sources.lock.json + patches/.
+/reference/
+/.build/
+/.local/
+/LLM_API.md
+/server.md
+/MainTask.md
+/bug.md
+/.anonymize-work/
+/清单材料/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.local.json
+**/access.json
+**/openwebui-access.json
+**/container.env
+**/state.db*
+**/webui.db*
+**/node_modules/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*.log
+**/*.pid
+# Historical one-time account setup includes personal account data.
+/deploy/hermes/provision-workstation-users*.py
+/deploy/hermes/.cache/
