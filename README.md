@@ -20,6 +20,7 @@ python scripts/package_deploy.py
 
 ```text
 configs/workstation/       产品文案、科研助手 SOUL，唯一配置来源
+extensions/               项目 Skill、论文 MCP 服务和原生插件
 reference/hermes-agent/    固定版本的执行引擎源码，准备脚本恢复
 reference/open-webui/      固定版本的 Svelte 前端和 Python 后端源码
 patches/                  我们对上游源码的定制，纳入主仓库审查
@@ -45,7 +46,9 @@ sources.lock.json         上游提交和生产镜像锁定信息
 | Agent 工具、会话、提示词组装 | `reference/hermes-agent/tools/`、`agent/`、`gateway/` |
 | 上线和运行检查 | [部署说明](deploy/hermes/README.md) |
 
-新增论文检索业务应有独立模块与测试，再通过工具接口接入执行引擎；目前没有已实现的独立论文检索服务，不要把提示词中写出的用途当成已完成的模块。
+论文检索现有 `extensions/mcp/paper-search`，通过 MCP 接入 Crossref 元数据、Europe PMC 检索及开放正文片段；配套文献检索 Skill 和引用排版插件。新增业务在 `extensions/` 中实现并测试，不把提示词中写出的用途当成已完成的模块。
+
+扩展能力的三个接入教程：[Skill](docs/development/SKILL-INTEGRATION.md)、[MCP](docs/development/MCP-INTEGRATION.md)、[插件](docs/development/PLUGIN-INTEGRATION.md)。包含源码约定、现有服务器发布、验证、回退，以及 Hermes 与 Open WebUI 两层接口的区别。
 
 本地 `LLM_API.md`、`server.md`、个人材料、账号录入脚本和运行数据已列入忽略规则。新同事通过管理员取得自己的开发凭据，不复制生产账号库。上游许可与版权声明保留在源码中。
 

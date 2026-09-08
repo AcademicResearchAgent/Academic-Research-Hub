@@ -9,6 +9,8 @@ flowchart LR
     UI --> Agent[Hermes API\n127.0.0.1:8642]
     Agent --> LLM[Qwen / Kimi / DeepSeek / GLM API]
     Agent --> Tools[终端 / 浏览器 / 网页工具]
+    Agent --> MCP[论文 MCP / stdio]
+    MCP --> Papers[Crossref / Europe PMC]
     Agent --> State[会话 / 身份 / 工作目录]
     UI --> DB[账号 / 聊天 / 模型配置]
     UI --> Keys[按账号加密的厂商 API Key]
@@ -39,7 +41,9 @@ UI 显示版本 0.11.3，但原始 `main-slim` 镜像的 OCI `org.opencontainers
 
 已有：账号登录、科研任务聊天、模型调用、执行引擎工具、科研文案、身份规则，以及论文检索可行性实测。2026-09-08 另已安装中英文文档检索模型，验证文本上传、网页索引与聊天引用，修复历史失败文件和截图入口反馈。论文检索调研见上一层的调研报告。
 
-待建：统一的学术数据库适配与结构化论文对象、稳定全文获取和解析、细分科研角色权限、专门审计与报告模块。当前账号分开，Agent 工作目录仍共享，不能视为已经实现多租户文件隔离。需求文档里的 Django、Vue、MySQL 属于建议架构，目前生产没有这些独立服务。
+扩展接入：`extensions/` 保存项目 Skill、MCP 服务和 Hermes 原生插件，配置清单为 `configs/workstation/extensions.json`。论文 MCP 提供 Crossref 检索 / DOI 核对、Europe PMC 检索 / 开放正文片段，配套 `research-literature` Skill 与 `research-citations` 插件。发布到服务器 `extensions/releases/` 和 `state/skills`、`state/plugins`，不修改上游核心。具体教程见 [Skill](SKILL-INTEGRATION.md)、[MCP](MCP-INTEGRATION.md)、[插件](PLUGIN-INTEGRATION.md)。
+
+待建：更多学术数据库、完整检索分页与论文对象管理、通用全文与图表解析、细分科研角色权限、专门审计与报告模块。当前账号分开，Agent 工作目录和扩展配置仍共享，不能视为已经实现多租户文件或 MCP 凭据隔离。需求文档里的 Django、Vue、MySQL 属于建议架构，目前生产没有这些独立服务。
 
 ## 为什么之前难以接手
 

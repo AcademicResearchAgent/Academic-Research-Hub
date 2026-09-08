@@ -1,0 +1,10 @@
+mcp==1.26.0
+httpx==0.28.1
+# Additional distributions installed into the pinned Hermes runtime on 2026-09-08.
+httpx-sse==0.4.3
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+pydantic-settings==2.15.0
+referencing==0.37.0
+rpds-py==2026.6.3
+sse-starlette==3.4.11

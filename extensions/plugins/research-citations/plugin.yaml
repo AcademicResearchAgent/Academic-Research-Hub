@@ -1,0 +1,5 @@
+name: research-citations
+version: "1.0.0"
+description: Format supplied scholarly metadata into a plain reference without inventing missing fields.
+provides_tools:
+  - research_citation
