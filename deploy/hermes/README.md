@@ -53,6 +53,8 @@ Open WebUI 与 Hermes 之间使用服务器生成的独立连接密钥。
 
 ## 服务管理
 
+科研扩展由 `deploy-extensions.py` 管理，入口 `deploy-extensions.sh`。已接入论文 MCP、文献检索 Skill 和引用插件；打包、部署、验证和回退步骤见 [MCP 接入教程](../../docs/development/MCP-INTEGRATION.md)。stdio MCP 不监听新端口，随 Hermes 服务管理。另两份教程为 [Skill](../../docs/development/SKILL-INTEGRATION.md) 与 [插件](../../docs/development/PLUGIN-INTEGRATION.md)。
+
 已验证首页、健康检查、管理员登录、Hermes 模型列表，以及浏览器中的中文聊天页和默认模型选择。
 切换后 Open WebUI 约占 701 MiB 内存，服务器约有 2.1 GiB 可用内存。原 dashboard 已停止并取消开机启动。
 

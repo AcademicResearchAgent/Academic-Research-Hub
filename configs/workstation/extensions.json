@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "skills": ["research-literature"],
+  "plugins": ["research-citations"],
+  "api_toolsets": ["skills", "research_citations", "research_papers"],
+  "mcp_servers": {
+    "research_papers": {
+      "command": "{root}/venv/bin/python",
+      "args": ["{release}/mcp/paper-search/server.py"],
+      "enabled": true,
+      "timeout": 60,
+      "connect_timeout": 30,
+      "supports_parallel_tool_calls": false,
+      "tools": {
+        "include": ["crossref_search", "crossref_lookup", "europepmc_search", "europepmc_fulltext"],
+        "resources": false,
+        "prompts": false
+      }
+    }
+  }
+}
