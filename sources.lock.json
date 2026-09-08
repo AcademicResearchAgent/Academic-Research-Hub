@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "hermes-agent": {
+      "url": "https://github.com/NousResearch/hermes-agent.git",
+      "commit": "693641aa8b4359c602283bdbbc14041e03bc47bc",
+      "directory": "reference/hermes-agent",
+      "patches": ["patches/hermes-agent/0001-workstation-identity.patch"]
+    },
+    "open-webui": {
+      "url": "https://github.com/open-webui/open-webui.git",
+      "commit": "0a7c15832fb30b1903753e83f81dc7d27e5b0944",
+      "directory": "reference/open-webui",
+      "patches": ["patches/open-webui/0001-workstation-copy.patch"]
+    }
+  },
+  "production": {
+    "openwebui_version": "0.11.3",
+    "upstream_image": "sha256:6f1a2ca9afd03aad68621e97032e0ce6b92d14298e4d392186e7e9f1e98b9922",
+    "custom_image": "sha256:25530dfc0f2783fe077e84ce6e896bd1700dfe73aa5c668d81e11f584ef15e5e",
+    "custom_tag": "haudi-openwebui:0.11.3-research-v3",
+    "note": "UI commit verified from original image OCI revision label; it differs from tag v0.11.3. Production uses compiled-asset overlays; source patches are the development equivalent, not an identical rebuilt image."
+  }
+}
