@@ -51,4 +51,4 @@ sources.lock.json         上游提交和生产镜像锁定信息
 
 文件上传、网页引用与截图入口的修复及部署步骤见 [附件功能修复记录](docs/development/ATTACHMENT-FIXES.md)。本地文档检索模型已在生产启用；HTTP 下截图按钮提供文件选择与粘贴指引，浏览器直接截屏需 HTTPS 或 localhost。
 
-模型选择支持 Qwen、Kimi、DeepSeek 和 GLM，新增型号首次使用时验证个人 API Key，并按账号加密保存。实现、官方目录依据与发布流程见 [模型选择与密钥管理](docs/development/MODEL-SELECTION.md)。首次配置需要 HTTPS；有服务器 SSH 权限的 Windows 开发者也可运行 `scripts/start_secure_access.ps1`，通过 `http://localhost:19119` 访问服务器。
+模型选择支持 Qwen、Kimi、DeepSeek 和 GLM，新增型号首次使用时验证个人 API Key，并按账号加密保存。用户直接访问 **https://42.193.15.167** 即可登录并填写 Key，原 HTTP 9119 入口自动跳转，无需 SSH。实现见 [模型选择与密钥管理](docs/development/MODEL-SELECTION.md)，证书自动续期和部署维护见 [HTTPS 运维说明](docs/development/HTTPS.md)。

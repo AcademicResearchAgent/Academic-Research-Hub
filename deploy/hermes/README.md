@@ -7,10 +7,9 @@
 
 ## 打开网页
 
-直接访问 http://42.193.15.167:9119 ，使用已录入的本站科研账号登录。当前入口使用 HTTP。
-2026-09-07 经用户确认，网页服务已改为监听 `0.0.0.0:9119`，保留账号验证并关闭自行注册。
+直接访问 **https://42.193.15.167**，使用已录入的本站科研账号登录。用户可以在网页中配置个人 API Key，无需 SSH；原 HTTP 9119 地址自动跳转。证书自动续期，详见 [HTTPS 运维说明](../../docs/development/HTTPS.md)。
 
-也可双击同目录的 `open-hermes.cmd`，或执行 `python deploy/hermes/open-hermes.py`。
+仅开发者排障时，也可双击同目录的 `open-hermes.cmd`，或执行 `python deploy/hermes/open-hermes.py`。
 脚本会在后台建立 SSH 隧道，打开 http://127.0.0.1:9119 。使用隧道时，电脑重启或隧道断开后重新运行即可。
 
 管理员登录信息保存在服务器 `/home/ubuntu/haudi-hermes/openwebui/access.json`。
@@ -21,14 +20,13 @@
 
 登录页已标注“登录科研智能体工作站”“本站科研账号（邮箱格式）”，并说明账号由管理员统一创建、邮箱仅作为登录名。
 首页使用“新科研任务”“科研任务记录”“研究笔记”“科研资源”等表述，六个任务建议对应 MainTask 的科研工作流。
-当前界面通过 `haudi-openwebui:0.11.3-research-v4` 定制镜像持久化。研究笔记和文献资料库的空状态、搜索及操作提示也使用一致术语。
+当前界面通过 `haudi-openwebui:0.11.3-research-v5` 定制镜像持久化，包含完整源码构建的前端和个人模型配置。研究笔记和文献资料库的空状态、搜索及操作提示也使用一致术语。
 
 统一文案在 [`configs/workstation/research-copy.json`](../../configs/workstation/research-copy.json)，科研助手身份说明在 [`configs/workstation/SOUL.md`](../../configs/workstation/SOUL.md)。运行 `python scripts/package_deploy.py` 将其以远端兼容文件名打包到 `.build/deploy/`，上传后再执行所需部署脚本；远端身份最终写入 `state/SOUL.md`。
 身份说明要求可核查引用、区分事实与推断、区分预期结果与实测结果，并按实际工具情况说明能力。
 文献业务用途文案不代表全部模块已经实现；学术数据库适配、运营人员/分析师等细分角色和专用报告模块仍需继续建设。本地知识库嵌入模型已于 2026-09-08 安装并通过附件引用验收。
 
-浏览器 → 服务器 Open WebUI（公网 9119）→ Hermes API（服务器内部 8642）。
-Open WebUI 监听 `0.0.0.0:9119`；Hermes API 仍只监听 `127.0.0.1:8642`。
+浏览器 → nginx（公网 HTTPS 443）→ Open WebUI（`127.0.0.1:9119`）→ Hermes API（`127.0.0.1:8642`）。
 Hermes 执行服务器上的终端、文件和浏览器工具。
 
 模型选为 `deepseek-v4-flash`。2026-09-08 经用户授权，已通过 SSH 将 `LLM_API.md` 中的模型密钥写入服务器 `state/.env`（权限 600），并重启 Hermes。

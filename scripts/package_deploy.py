@@ -17,7 +17,8 @@ FILES={
  'deploy-workstation-identity.sh','verify-research-copy.sh','verify-workstation-identity.sh',
  'install-retrieval-model.py','install-retrieval-model.sh','configure-retrieval.py','configure-retrieval.sh',
  'verify-retrieval.py','verify-retrieval.sh','reindex-failed-files.sh',
- 'configure-model-catalog.py','build-model-release.sh','deploy-model-runtime.py','verify-model-selection.py')},
+ 'configure-model-catalog.py','build-model-release.sh','deploy-model-runtime.py','verify-model-selection.py',
+ 'prepare-https.sh','issue-https-certificate.sh','activate-https.py','verify-https.sh')},
 }
 TARGET.mkdir(parents=True,exist_ok=True)
 for source,destination in FILES.items():

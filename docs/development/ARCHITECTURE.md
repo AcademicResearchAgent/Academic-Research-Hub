@@ -4,7 +4,8 @@
 
 ```mermaid
 flowchart LR
-    Browser[浏览器] --> UI[Open WebUI\nSvelte 前端 + Python 后端\n公网 9119]
+    Browser[浏览器] --> TLS[Nginx\n公网 HTTPS 443]
+    TLS --> UI[Open WebUI\nSvelte 前端 + Python 后端\n127.0.0.1:9119]
     UI --> Agent[Hermes API\n127.0.0.1:8642]
     Agent --> LLM[Qwen / Kimi / DeepSeek / GLM API]
     Agent --> Tools[终端 / 浏览器 / 网页工具]

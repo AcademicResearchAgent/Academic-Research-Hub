@@ -1,5 +1,6 @@
 """Exercise personal-key routing with the existing server's DeepSeek key; never print secrets."""
 import json
+import os
 from pathlib import Path
 import sqlite3
 import uuid
@@ -11,7 +12,7 @@ account=json.loads((root/'openwebui/access.json').read_text())
 env=dotenv_values(root/'state/.env')
 key=env.get('DEEPSEEK_API_KEY') or env.get('OPENAI_API_KEY')
 assert key,'Existing provider key was not found'
-with httpx.Client(base_url='http://127.0.0.1:9119',timeout=240,trust_env=False) as c:
+with httpx.Client(base_url=os.environ.get('WORKSTATION_VERIFY_URL','http://127.0.0.1:9119'),timeout=240,trust_env=False) as c:
     response=c.post('/api/v1/auths/signin',json={k:account[k] for k in ('email','password')});response.raise_for_status()
     user=response.json();c.headers['Authorization']='Bearer '+user['token']
     response=c.get('/api/workstation/catalog');response.raise_for_status()
