@@ -851,3 +851,462 @@
  
  	const inputFilesHandler = async (inputFiles) => {
  		inputFiles.forEach(async (file) => {
+--- /dev/null
++++ b/src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte
+@@ -0,0 +1,114 @@
++<script lang="ts">
++  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
++  import Modal from '$lib/components/common/Modal.svelte';
++  export let show = true;
++  export let modelId = '';
++  const dispatch = createEventDispatcher();
++  let catalog: any = null;
++  let apiKey = '';
++  let endpointId = '';
++  let busy = false;
++  let error = '';
++  let secure = false;
++  $: selected = catalog?.models.find((m: any) => m.id === modelId);
++  $: provider = selected ? catalog.providers[selected.provider] : null;
++  $: configured = selected ? catalog.credentials[selected.provider]?.configured : false;
++
++  async function request(path: string, method = 'GET', body?: any) {
++    const response = await fetch('/api/workstation' + path, {
++      method, headers: { Authorization: `Bearer ${localStorage.token}`, 'Content-Type': 'application/json' },
++      ...(body ? { body: JSON.stringify(body) } : {})
++    });
++    const data = await response.json();
++    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : '操作失败，请重试。');
++    return data;
++  }
++  function chooseModel() {
++    apiKey = ''; error = '';
++    const model = catalog?.models.find((m: any) => m.id === modelId);
++    endpointId = model ? (catalog.credentials[model.provider]?.endpoint_id || catalog.providers[model.provider].endpoints[0].id) : '';
++  }
++  onMount(async () => {
++    secure = window.isSecureContext;
++    try {
++      catalog = await request('/catalog');
++      if (!catalog.models.some((m: any) => m.id === modelId)) modelId = catalog.models[0]?.id || '';
++      chooseModel();
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++  });
++  onDestroy(() => { apiKey = ''; });
++  async function save() {
++    if (!secure || !apiKey.trim() || busy) return;
++    busy = true; error = '';
++    try {
++      await request('/credentials', 'POST', {model_id: modelId, endpoint_id: endpointId, api_key: apiKey.trim()});
++      apiKey = ''; show = false; dispatch('ready', modelId);
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++    finally { busy = false; }
++  }
++  async function useSaved() {
++    busy = true; error = '';
++    try {
++      await request('/models/' + encodeURIComponent(modelId) + '/activate', 'POST');
++      show = false; dispatch('ready', modelId);
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++    finally { busy = false; }
++  }
++  async function remove() {
++    busy = true; error = '';
++    try {
++      await request('/credentials/' + selected.provider, 'DELETE');
++      catalog = await request('/catalog'); apiKey = ''; chooseModel();
++    } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
++    finally { busy = false; }
++  }
++</script>
++
++<Modal bind:show size="sm">
++  <div class="p-5 space-y-4" data-workstation-model-keys>
++    <div class="flex items-center justify-between">
++      <h2 class="text-xl font-semibold">模型与 API Key</h2>
++      <button type="button" aria-label="关闭模型配置" class="rounded-lg px-2 py-1" on:click={() => {show = false;}}>关闭</button>
++    </div>
++    <p class="text-sm text-gray-500">首次使用厂商模型时，填写你自己的 API Key。同一厂商可复用已配置的密钥，其他账号无法使用。</p>
++    {#if catalog}
++      <label class="block text-sm">选择模型
++        <select class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" bind:value={modelId} on:change={chooseModel} disabled={busy}>
++          {#each catalog.models as model}<option value={model.id}>{model.name}</option>{/each}
++        </select>
++      </label>
++      {#if selected && provider}
++        <p class="text-sm text-gray-500">{selected.description}</p>
++        <div class="flex items-center justify-between text-sm">
++          <span>{provider.name} · {configured ? '已配置' : '待配置'}</span>
++          <a class="underline" href={provider.key_url} target="_blank" rel="noopener noreferrer">获取 API Key</a>
++        </div>
++        <label class="block text-sm">接入区域
++          <select class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" bind:value={endpointId} disabled={busy}>
++            {#each provider.endpoints as endpoint}<option value={endpoint.id}>{endpoint.name}</option>{/each}
++          </select>
++        </label>
++        {#if !secure}
++          <div class="rounded-xl bg-amber-50 dark:bg-amber-950 p-3 text-sm" role="status">当前是 HTTP 连接。请通过工作站 HTTPS 地址或 localhost SSH 隧道填写 API Key；已有密钥的模型仍可选择使用。</div>
++        {/if}
++        <form on:submit|preventDefault={save} class="space-y-3">
++          <label class="block text-sm">{configured ? '更换 API Key' : 'API Key'}
++            <input class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" type="password" bind:value={apiKey} autocomplete="off" spellcheck="false" placeholder={configured ? '填写新密钥以替换' : '粘贴该厂商的 API Key'} disabled={!secure || busy} />
++          </label>
++          <p class="text-xs text-gray-500">密钥由本站加密保存，不写入聊天记录。验证会向所选模型发送一条简短请求。</p>
++          <button class="w-full rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black px-4 py-2 disabled:opacity-40" type="submit" disabled={!secure || !apiKey.trim() || busy}>{busy ? '正在验证…' : '保存并使用'}</button>
++        </form>
++        {#if configured}
++          <div class="flex gap-4 text-sm">
++            <button class="underline" disabled={busy} on:click={useSaved}>使用已保存的密钥</button>
++            <button class="text-red-600 underline" disabled={busy} on:click={remove}>删除此厂商密钥</button>
++          </div>
++        {/if}
++      {/if}
++      <p class="text-xs text-gray-400">目录核对日期：{catalog.checked_at}。实际可用模型取决于厂商区域和账号权限。</p>
++    {:else if !error}
++      <p class="text-sm">正在加载模型目录…</p>
++    {/if}
++    {#if error}<p role="alert" class="rounded-xl bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-200">{error}</p>{/if}
++  </div>
++</Modal>
+--- a/src/lib/components/chat/ModelSelector/Selector.svelte
++++ b/src/lib/components/chat/ModelSelector/Selector.svelte
+@@ -1,4 +1,7 @@
+ <script lang="ts">
++	import ModelKeyDialog from "./ModelKeyDialog.svelte";
++	let showModelKeys = false;
++	let pendingModel = "";
+ 	import { marked } from 'marked';
+ 	import Fuse from 'fuse.js';
+ 
+@@ -486,7 +489,7 @@
+ 		}
+ 	};
+ 
+-	const selectItem = (item, index: number) => {
++	const applyItem = (item, index: number) => {
+ 		selectedModelIdx = index;
+ 
+ 		if (values) {
+@@ -961,7 +964,22 @@
+ 		filteredItems.length,
+ 		Math.ceil((listScrollTop + listViewportHeight) / ITEM_HEIGHT) + OVERSCAN
+ 	);
++
++    const selectItem = async (item: (typeof items)[number], index: number) => {
++        if (item.value.startsWith('ws-') && !(compareEnabled && selectedValues.includes(item.value))) {
++            try {
++                const response = await fetch('/api/workstation/models/' + encodeURIComponent(item.value) + '/activate', {
++                    method: 'POST', headers: {Authorization: `Bearer ${localStorage.token}`}
++                });
++                if (response.status === 428) { pendingModel = item.value; show = false; showModelKeys = true; return; }
++                if (!response.ok) { const result = await response.json(); toast.error(typeof result.detail === 'string' ? result.detail : '模型验证失败'); return; }
++            } catch { toast.error('模型连接失败，请重试。'); return; }
++        }
++        applyItem(item, index);
++    };
++
+ </script>
++{#if showModelKeys}<ModelKeyDialog bind:show={showModelKeys} modelId={pendingModel} on:ready={(event) => { const item = items.find(i => i.value === event.detail); if (item) applyItem(item, items.indexOf(item)); }} />{/if}
+ 
+ <ConfirmDialog
+ 	bind:show={showDeleteConfirm}
+--- a/src/lib/components/chat/ModelSelector.svelte
++++ b/src/lib/components/chat/ModelSelector.svelte
+@@ -1,4 +1,6 @@
+ <script lang="ts">
++	import ModelKeyDialog from "./ModelSelector/ModelKeyDialog.svelte";
++	let showModelKeys = false;
+ 	import { models, pinnedModels, settings, user } from '$lib/stores';
+ 	import { getContext } from 'svelte';
+ 	import { toast } from 'svelte-sonner';
+@@ -58,6 +60,7 @@
+ 		compareModels = true;
+ 	}
+ </script>
++{#if showModelKeys}<ModelKeyDialog bind:show={showModelKeys} modelId={selectedModels[0]} on:ready={(event) => { selectedModels = [event.detail]; }} />{/if}
+ 
+ <div class="flex min-w-0 max-w-full flex-col items-start">
+ 	<div class="flex min-w-0 max-w-full">
+@@ -89,3 +92,5 @@
+ 		</div>
+ 	</div>
+ </div>
++
++<button type="button" class="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1" aria-label="管理模型 API Key" on:click={() => { showModelKeys = true; }}>模型密钥</button>
+--- /dev/null
++++ b/backend/open_webui/workstation_models/core.py
+@@ -0,0 +1,70 @@
++"""Credential persistence and signed runtime envelopes; no web framework dependency."""
++import base64
++import hashlib
++import json
++import os
++import sqlite3
++import time
++from contextlib import contextmanager
++from pathlib import Path
++from cryptography.fernet import Fernet
++
++def cipher(secret, purpose):
++    if not secret:
++        raise RuntimeError('Workstation secret is not configured')
++    return Fernet(base64.urlsafe_b64encode(hashlib.sha256((secret+purpose).encode()).digest()))
++
++class CredentialStore:
++    def __init__(self, path, secret):
++        self.path=Path(path)
++        self.path.parent.mkdir(parents=True,exist_ok=True)
++        self.cipher=cipher(secret,'/workstation-credentials/v1')
++        with self.connect() as db:
++            db.execute('CREATE TABLE IF NOT EXISTS credentials (user_id TEXT NOT NULL, provider TEXT NOT NULL, endpoint TEXT NOT NULL, secret TEXT NOT NULL, validated TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(user_id,provider,endpoint))')
++            db.execute('CREATE TABLE IF NOT EXISTS active (user_id TEXT NOT NULL, provider TEXT NOT NULL, endpoint TEXT NOT NULL, PRIMARY KEY(user_id,provider))')
++        self.path.chmod(0o600)
++
++    @contextmanager
++    def connect(self):
++        db=sqlite3.connect(self.path,timeout=10)
++        try:
++            with db:yield db
++        finally:db.close()
++
++    def put(self,user_id,provider,endpoint,key,model_id):
++        # User/provider/endpoint are authenticated inside the ciphertext too.
++        payload=json.dumps({'user_id':user_id,'provider':provider,'endpoint':endpoint,'key':key})
++        encrypted=self.cipher.encrypt(payload.encode()).decode()
++        with self.connect() as db:
++            db.execute('INSERT OR REPLACE INTO credentials VALUES (?,?,?,?,?,?)',
++                       (user_id,provider,endpoint,encrypted,json.dumps([model_id]),int(time.time())))
++            db.execute('INSERT OR REPLACE INTO active VALUES (?,?,?)',(user_id,provider,endpoint))
++
++    def get(self,user_id,provider):
++        with self.connect() as db:
++            row=db.execute('SELECT c.endpoint,c.secret,c.validated FROM credentials c JOIN active a ON c.user_id=a.user_id AND c.provider=a.provider AND c.endpoint=a.endpoint WHERE c.user_id=? AND c.provider=?',(user_id,provider)).fetchone()
++        if not row:return None
++        payload=json.loads(self.cipher.decrypt(row[1].encode()))
++        if (payload['user_id'],payload['provider'],payload['endpoint'])!=(user_id,provider,row[0]):
++            raise ValueError('Credential ownership mismatch')
++        return {'endpoint':row[0],'key':payload['key'],'validated':json.loads(row[2])}
++
++    def mark_validated(self,user_id,provider,model_id):
++        entry=self.get(user_id,provider)
++        if entry:
++            with self.connect() as db:
++                db.execute('UPDATE credentials SET validated=? WHERE user_id=? AND provider=? AND endpoint=?',
++                           (json.dumps(sorted(set(entry['validated']+[model_id]))),user_id,provider,entry['endpoint']))
++
++    def delete(self,user_id,provider):
++        with self.connect() as db:
++            db.execute('DELETE FROM credentials WHERE user_id=? AND provider=?',(user_id,provider))
++            db.execute('DELETE FROM active WHERE user_id=? AND provider=?',(user_id,provider))
++
++def runtime_envelope(secret, *, model, endpoint, key, scope):
++    payload={'model':model,'base_url':endpoint,'api_key':key,'scope':scope}
++    return cipher(secret,'/workstation-runtime/v1').encrypt(json.dumps(payload).encode()).decode()
++
++def session_scope(user_id,model_id,chat_id,first_message):
++    payload=json.dumps([user_id,model_id,chat_id or '',first_message if not chat_id else ''],ensure_ascii=False,sort_keys=True)
++    return 'ws-'+hashlib.sha256(payload.encode()).hexdigest()[:48]
+--- /dev/null
++++ b/backend/open_webui/workstation_models/router.py
+@@ -0,0 +1,148 @@
++"""Authenticated catalog/key APIs and the account-specific Agent bridge."""
++import asyncio
++from collections import defaultdict,deque
++import json
++import os
++from pathlib import Path
++import time
++import httpx
++from fastapi import APIRouter,Depends,HTTPException,Request
++from fastapi.exceptions import RequestValidationError
++from fastapi.routing import APIRoute
++from fastapi.responses import JSONResponse,StreamingResponse
++from pydantic import BaseModel,Field,SecretStr
++from open_webui.utils.auth import get_verified_user
++from .core import CredentialStore,runtime_envelope,session_scope
++
++class PrivateValidationRoute(APIRoute):
++    def get_route_handler(self):
++        handler=super().get_route_handler()
++        async def guarded(request):
++            try:return await handler(request)
++            except RequestValidationError:
++                return JSONResponse({'detail':'请检查模型、接入区域和 API Key 的格式。'},status_code=422)
++        return guarded
++
++router=APIRouter(route_class=PrivateValidationRoute)
++CATALOG=json.loads((Path(__file__).parent/'catalog.json').read_text())
++MODELS={m['id']:m for m in CATALOG['models']}
++_store=None
++_attempts=defaultdict(deque)
++
++def store():
++    global _store
++    if _store is None:
++        _store=CredentialStore(Path(os.environ.get('DATA_DIR','/app/backend/data'))/'workstation-credentials.db',os.environ.get('WEBUI_SECRET_KEY',''))
++    return _store
++
++def model_info(model_id):
++    if model_id not in MODELS:raise HTTPException(404,'未找到该科研模型，请刷新模型目录。')
++    return MODELS[model_id]
++
++def endpoint_info(provider,endpoint_id):
++    endpoints=CATALOG['providers'][provider]['endpoints']
++    entry=next((e for e in endpoints if e['id']==endpoint_id),None)
++    if not entry:raise HTTPException(400,'请选择该厂商支持的接入区域。')
++    return entry
++
++def secure_key_entry(request):
++    if request.url.scheme!='https' and request.url.hostname not in ('localhost','127.0.0.1','::1'):
++        raise HTTPException(400,'API Key 请通过 HTTPS 或 localhost 安全入口配置。')
++
++def rate_limit(user_id):
++    now=time.monotonic();items=_attempts[user_id]
++    while items and now-items[0]>60:items.popleft()
++    if len(items)>=6:raise HTTPException(429,'验证次数较多，请稍后重试。')
++    items.append(now)
++
++async def validate(model,endpoint,key):
++    payload={'model':model['upstream_id'],'messages':[{'role':'user','content':'Reply OK.'}],'max_tokens':16,'stream':False}
++    if model['provider']=='qwen':payload['enable_thinking']=False
++    if model['provider']=='deepseek':payload['thinking']={'type':'disabled'}
++    if model['upstream_id']=='kimi-k3':payload['reasoning_effort']='low'
++    try:
++        async with httpx.AsyncClient(timeout=httpx.Timeout(40,connect=10),follow_redirects=False,trust_env=False) as c:
++            response=await c.post(endpoint['url']+'/chat/completions',headers={'Authorization':'Bearer '+key},json=payload)
++    except httpx.HTTPError:
++        raise HTTPException(502,'连接厂商超时或失败，请检查接入区域后重试。') from None
++    if response.status_code in (401,403):raise HTTPException(400,'API Key 无效或无访问权限，请检查密钥和接入区域。')
++    if response.status_code in (402,429):raise HTTPException(400,'该账号余额、配额或请求频率受限，请在厂商控制台检查。')
++    if response.status_code==404:raise HTTPException(400,'该接入区域尚不可用此模型，请开通模型权限或选择其他模型。')
++    if response.status_code!=200:raise HTTPException(502,'厂商未接受验证请求，请确认该模型的访问权限并稍后重试。')
++    try:
++        result=response.json()
++        if not isinstance(result.get('choices'),list) or not result['choices']:raise ValueError()
++    except (ValueError,AttributeError):raise HTTPException(502,'厂商返回了无法识别的验证结果。') from None
++
++@router.get('/catalog')
++async def catalog(user=Depends(get_verified_user)):
++    states={}
++    for provider in CATALOG['providers']:
++        entry=await asyncio.to_thread(store().get,user.id,provider)
++        states[provider]={'configured':bool(entry),'endpoint_id':entry['endpoint'] if entry else None}
++    return {**CATALOG,'credentials':states}
++
++class KeyForm(BaseModel):
++    model_id:str
++    endpoint_id:str
++    api_key:SecretStr=Field(min_length=8,max_length=4096)
++
++@router.post('/credentials')
++async def save_key(form:KeyForm,request:Request,user=Depends(get_verified_user)):
++    secure_key_entry(request);rate_limit(user.id)
++    model=model_info(form.model_id);endpoint=endpoint_info(model['provider'],form.endpoint_id)
++    key=form.api_key.get_secret_value().strip()
++    if any(c in key for c in '\r\n\x00'):raise HTTPException(400,'API Key 格式不正确。')
++    await validate(model,endpoint,key)
++    await asyncio.to_thread(store().put,user.id,model['provider'],form.endpoint_id,key,model['id'])
++    return {'configured':True,'provider':model['provider'],'endpoint_id':form.endpoint_id}
++
++@router.post('/models/{model_id}/activate')
++async def activate(model_id:str,user=Depends(get_verified_user)):
++    model=model_info(model_id)
++    entry=await asyncio.to_thread(store().get,user.id,model['provider'])
++    if not entry:raise HTTPException(428,'首次使用此厂商，请配置你的 API Key。')
++    if model_id not in entry['validated']:
++        rate_limit(user.id)
++        await validate(model,endpoint_info(model['provider'],entry['endpoint']),entry['key'])
++        await asyncio.to_thread(store().mark_validated,user.id,model['provider'],model_id)
++    return {'ready':True,'model_id':model_id}
++
++@router.delete('/credentials/{provider}')
++async def delete_key(provider:str,user=Depends(get_verified_user)):
++    if provider not in CATALOG['providers']:raise HTTPException(404,'厂商不存在。')
++    await asyncio.to_thread(store().delete,user.id,provider)
++    return {'deleted':True}
++
++async def generate_chat(request,form_data,user):
++    model=model_info(form_data['model'])
++    entry=await asyncio.to_thread(store().get,user.id,model['provider'])
++    if not entry:raise HTTPException(428,'请先在模型选择器中配置此厂商的 API Key。')
++    endpoint=endpoint_info(model['provider'],entry['endpoint'])
++    messages=form_data.get('messages',[])
++    first=next((m.get('content','') for m in messages if m.get('role')=='user'),'')
++    metadata=form_data.get('metadata') or {}
++    scope=session_scope(user.id,model['id'],metadata.get('chat_id'),first)
++    internal_key=os.environ.get('WORKSTATION_AGENT_KEY') or os.environ.get('OPENAI_API_KEY','')
++    envelope=runtime_envelope(internal_key,model=model['upstream_id'],endpoint=endpoint['url'],key=entry['key'],scope=scope)
++    # Whitelist forwarded fields; never forward caller-supplied routing/credential data.
++    payload={'model':model['id'],'messages':messages,'stream':bool(form_data.get('stream')),'_workstation_runtime':envelope}
++    client=httpx.AsyncClient(timeout=httpx.Timeout(600,connect=10),trust_env=False)
++    try:
++        response=await client.send(client.build_request('POST','http://127.0.0.1:8642/v1/chat/completions',json=payload,
++            headers={'Authorization':'Bearer '+internal_key,'X-Hermes-Session-Key':scope}),stream=True)
++        if response.status_code!=200:
++            await response.aclose();await client.aclose()
++            raise HTTPException(502,'所选模型调用失败，请检查 API Key、余额或模型权限。')
++        if not payload['stream']:
++            data=json.loads(await response.aread());await response.aclose();await client.aclose()
++            return JSONResponse(data)
++    except httpx.HTTPError:
++        await client.aclose()
++        raise HTTPException(502,'科研助手连接失败，请稍后重试。') from None
++    async def stream():
++        try:
++            async for chunk in response.aiter_bytes():yield chunk
++        finally:
++            await response.aclose();await client.aclose()
++    return StreamingResponse(stream(),media_type='text/event-stream')
+--- /dev/null
++++ b/backend/open_webui/workstation_models/__init__.py
+@@ -0,0 +1 @@
++"""Account-scoped research model selection and credentials."""
+--- /dev/null
++++ b/backend/open_webui/workstation_models/catalog.json
+@@ -0,0 +1,21 @@
++{
++  "checked_at": "2026-09-08",
++  "providers": {
++    "qwen": {"name":"Qwen · 阿里云百炼","key_url":"https://bailian.console.aliyun.com/","docs_url":"https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope","endpoints":[{"id":"cn","name":"中国大陆（北京）","url":"https://dashscope.aliyuncs.com/compatible-mode/v1"},{"id":"intl","name":"国际（新加坡）","url":"https://dashscope-intl.aliyuncs.com/compatible-mode/v1"}]},
++    "kimi": {"name":"Kimi · 月之暗面","key_url":"https://platform.kimi.com/","docs_url":"https://platform.kimi.com/docs/models","endpoints":[{"id":"cn","name":"中国大陆","url":"https://api.moonshot.cn/v1"},{"id":"intl","name":"国际","url":"https://api.moonshot.ai/v1"}]},
++    "deepseek": {"name":"DeepSeek","key_url":"https://platform.deepseek.com/api_keys","docs_url":"https://api-docs.deepseek.com/","endpoints":[{"id":"official","name":"官方 API","url":"https://api.deepseek.com/v1"}]},
++    "glm": {"name":"GLM · 智谱","key_url":"https://open.bigmodel.cn/","docs_url":"https://github.com/zai-org/GLM-5","endpoints":[{"id":"cn","name":"智谱开放平台","url":"https://open.bigmodel.cn/api/paas/v4"},{"id":"intl","name":"Z.ai 国际平台","url":"https://api.z.ai/api/paas/v4"}]}
++  },
++  "models": [
++    {"id":"ws-qwen3.8-max","name":"Qwen3.8 Max","provider":"qwen","upstream_id":"qwen3.8-max","vision":true,"description":"旗舰通用模型 · 科研分析、代码与图像理解"},
++    {"id":"ws-qwen3.8-flash","name":"Qwen3.8 Flash","provider":"qwen","upstream_id":"qwen3.8-flash","vision":true,"description":"快速通用模型 · 高频问答与资料整理"},
++    {"id":"ws-kimi-k3","name":"Kimi K3","provider":"kimi","upstream_id":"kimi-k3","vision":true,"description":"旗舰长上下文模型 · 知识工作与深度推理"},
++    {"id":"ws-kimi-k2.7-code","name":"Kimi K2.7 Code","provider":"kimi","upstream_id":"kimi-k2.7-code","vision":true,"description":"编程模型 · 实验代码与长程开发任务"},
++    {"id":"ws-deepseek-v4-pro","name":"DeepSeek V4 Pro","provider":"deepseek","upstream_id":"deepseek-v4-pro","vision":false,"description":"旗舰推理模型 · 复杂分析与科研写作"},
++    {"id":"ws-deepseek-v4-flash","name":"DeepSeek V4 Flash","provider":"deepseek","upstream_id":"deepseek-v4-flash","vision":false,"description":"快速文本模型 · 日常科研任务"},
++    {"id":"ws-deepseek-v4-flash-vision-exp","name":"DeepSeek V4 Flash Vision · 实验版","provider":"deepseek","upstream_id":"deepseek-v4-flash-vision-exp","vision":true,"description":"实验性视觉模型 · 图像与截图理解"},
++    {"id":"ws-glm-5.3","name":"GLM-5.3","provider":"glm","upstream_id":"glm-5.3","vision":false,"description":"旗舰模型 · 编程与长程任务"},
++    {"id":"ws-glm-5.3-flash","name":"GLM-5.3 Flash","provider":"glm","upstream_id":"glm-5.3-flash","vision":true,"description":"快速多模态模型 · 文本与图像任务"},
++    {"id":"ws-glm-5.2","name":"GLM-5.2","provider":"glm","upstream_id":"glm-5.2","vision":false,"description":"长上下文推理模型 · 大篇幅资料分析"}
++  ]
++}
+--- a/backend/open_webui/main.py
++++ b/backend/open_webui/main.py
+@@ -817,6 +817,9 @@
+ app.mount('/ws', socket_app)
+ 
+ 
++from open_webui.workstation_models.router import router as workstation_models_router
++app.include_router(workstation_models_router, prefix='/api/workstation', tags=['workstation'])
++
+ app.include_router(ollama.router, prefix='/ollama', tags=['ollama'])
+ app.include_router(openai.router, prefix='/openai', tags=['openai'])
+ 
+--- a/backend/open_webui/utils/chat.py
++++ b/backend/open_webui/utils/chat.py
+@@ -204,6 +204,10 @@
+                 await check_model_access(user, model)
+             except Exception as e:
+                 raise e
++
++        if model_id.startswith('ws-'):
++            from open_webui.workstation_models.router import generate_chat
++            return await generate_chat(request, form_data, user)
+ 
+         # Arena model — sub-model was already resolved by process_chat_payload.
+         # Inject selected_model_id into the response for the frontend.

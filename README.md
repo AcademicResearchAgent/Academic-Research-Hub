@@ -39,6 +39,7 @@ sources.lock.json         上游提交和生产镜像锁定信息
 | --- | --- |
 | 助手身份、回答风格 | `configs/workstation/SOUL.md` |
 | 产品名称、登录说明、科研建议、中文术语 | `configs/workstation/research-copy.json` |
+| 模型目录、厂商区域与 API Key 配置 | `configs/workstation/model-catalog.json`、`overlays/open-webui/workstation_models/` |
 | 登录、聊天、科研资源等界面行为 | `reference/open-webui/src/` |
 | 账号、模型代理、文件和知识库接口 | `reference/open-webui/backend/open_webui/` |
 | Agent 工具、会话、提示词组装 | `reference/hermes-agent/tools/`、`agent/`、`gateway/` |
@@ -49,3 +50,5 @@ sources.lock.json         上游提交和生产镜像锁定信息
 本地 `LLM_API.md`、`server.md`、个人材料、账号录入脚本和运行数据已列入忽略规则。新同事通过管理员取得自己的开发凭据，不复制生产账号库。上游许可与版权声明保留在源码中。
 
 文件上传、网页引用与截图入口的修复及部署步骤见 [附件功能修复记录](docs/development/ATTACHMENT-FIXES.md)。本地文档检索模型已在生产启用；HTTP 下截图按钮提供文件选择与粘贴指引，浏览器直接截屏需 HTTPS 或 localhost。
+
+模型选择支持 Qwen、Kimi、DeepSeek 和 GLM，新增型号首次使用时验证个人 API Key，并按账号加密保存。实现、官方目录依据与发布流程见 [模型选择与密钥管理](docs/development/MODEL-SELECTION.md)。首次配置需要 HTTPS；有服务器 SSH 权限的 Windows 开发者也可运行 `scripts/start_secure_access.ps1`，通过 `http://localhost:19119` 访问服务器。

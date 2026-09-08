@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-09-08",
+  "providers": {
+    "qwen": {"name":"Qwen · 阿里云百炼","key_url":"https://bailian.console.aliyun.com/","docs_url":"https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope","endpoints":[{"id":"cn","name":"中国大陆（北京）","url":"https://dashscope.aliyuncs.com/compatible-mode/v1"},{"id":"intl","name":"国际（新加坡）","url":"https://dashscope-intl.aliyuncs.com/compatible-mode/v1"}]},
+    "kimi": {"name":"Kimi · 月之暗面","key_url":"https://platform.kimi.com/","docs_url":"https://platform.kimi.com/docs/models","endpoints":[{"id":"cn","name":"中国大陆","url":"https://api.moonshot.cn/v1"},{"id":"intl","name":"国际","url":"https://api.moonshot.ai/v1"}]},
+    "deepseek": {"name":"DeepSeek","key_url":"https://platform.deepseek.com/api_keys","docs_url":"https://api-docs.deepseek.com/","endpoints":[{"id":"official","name":"官方 API","url":"https://api.deepseek.com/v1"}]},
+    "glm": {"name":"GLM · 智谱","key_url":"https://open.bigmodel.cn/","docs_url":"https://github.com/zai-org/GLM-5","endpoints":[{"id":"cn","name":"智谱开放平台","url":"https://open.bigmodel.cn/api/paas/v4"},{"id":"intl","name":"Z.ai 国际平台","url":"https://api.z.ai/api/paas/v4"}]}
+  },
+  "models": [
+    {"id":"ws-qwen3.8-max","name":"Qwen3.8 Max","provider":"qwen","upstream_id":"qwen3.8-max","vision":true,"description":"旗舰通用模型 · 科研分析、代码与图像理解"},
+    {"id":"ws-qwen3.8-flash","name":"Qwen3.8 Flash","provider":"qwen","upstream_id":"qwen3.8-flash","vision":true,"description":"快速通用模型 · 高频问答与资料整理"},
+    {"id":"ws-kimi-k3","name":"Kimi K3","provider":"kimi","upstream_id":"kimi-k3","vision":true,"description":"旗舰长上下文模型 · 知识工作与深度推理"},
+    {"id":"ws-kimi-k2.7-code","name":"Kimi K2.7 Code","provider":"kimi","upstream_id":"kimi-k2.7-code","vision":true,"description":"编程模型 · 实验代码与长程开发任务"},
+    {"id":"ws-deepseek-v4-pro","name":"DeepSeek V4 Pro","provider":"deepseek","upstream_id":"deepseek-v4-pro","vision":false,"description":"旗舰推理模型 · 复杂分析与科研写作"},
+    {"id":"ws-deepseek-v4-flash","name":"DeepSeek V4 Flash","provider":"deepseek","upstream_id":"deepseek-v4-flash","vision":false,"description":"快速文本模型 · 日常科研任务"},
+    {"id":"ws-deepseek-v4-flash-vision-exp","name":"DeepSeek V4 Flash Vision · 实验版","provider":"deepseek","upstream_id":"deepseek-v4-flash-vision-exp","vision":true,"description":"实验性视觉模型 · 图像与截图理解"},
+    {"id":"ws-glm-5.3","name":"GLM-5.3","provider":"glm","upstream_id":"glm-5.3","vision":false,"description":"旗舰模型 · 编程与长程任务"},
+    {"id":"ws-glm-5.3-flash","name":"GLM-5.3 Flash","provider":"glm","upstream_id":"glm-5.3-flash","vision":true,"description":"快速多模态模型 · 文本与图像任务"},
+    {"id":"ws-glm-5.2","name":"GLM-5.2","provider":"glm","upstream_id":"glm-5.2","vision":false,"description":"长上下文推理模型 · 大篇幅资料分析"}
+  ]
+}

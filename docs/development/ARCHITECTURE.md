@@ -6,10 +6,11 @@
 flowchart LR
     Browser[浏览器] --> UI[Open WebUI\nSvelte 前端 + Python 后端\n公网 9119]
     UI --> Agent[Hermes API\n127.0.0.1:8642]
-    Agent --> LLM[DeepSeek API]
+    Agent --> LLM[Qwen / Kimi / DeepSeek / GLM API]
     Agent --> Tools[终端 / 浏览器 / 网页工具]
     Agent --> State[会话 / 身份 / 工作目录]
     UI --> DB[账号 / 聊天 / 模型配置]
+    UI --> Keys[按账号加密的厂商 API Key]
 ```
 
 ## 服务器到底有没有源码
@@ -31,7 +32,7 @@ Hermes 的本地基线是 `693641aa8b4359c602283bdbbc14041e03bc47bc`，版本 0.
 
 UI 显示版本 0.11.3，但原始 `main-slim` 镜像的 OCI `org.opencontainers.image.revision` 为 `0a7c15832fb30b1903753e83f81dc7d27e5b0944`。正式标签 `v0.11.3` 指向 `2a960a59fe1dbbd35282f0556b3666d81102e781`。开发必须使用锁文件中的实际镜像提交，而不是只看版本号或继续拉取浮动 `main`。
 
-生产 UI 为 `haudi-openwebui:0.11.3-research-v4`，镜像 ID 与基线 ID 记录在根目录锁文件。它仍采用编译产物覆盖的旧构建方式。新整理的源码补丁与现有定制意图对应，但尚未以完整源码构建、验收并替换生产镜像；两者不是已经验证为字节一致的产物。v4 的截图处理函数由 `overlays/open-webui/screen-capture.js` 同时注入源码与镜像补丁，避免维护两份实现。
+生产 UI 为 `haudi-openwebui:0.11.3-research-v5`，镜像 ID 与基线 ID 记录在根目录锁文件。v5 使用固定上游源码加产品补丁，已在 Node.js 22 下完整构建前端，并替换对应 Python 后端；依赖层沿用 v4。模型目录、账号密钥和实际 Agent 调用已完成验收。发布材料在服务器 `model-releases/` 下，开发仍以团队仓库和固定上游检出为准。截图与模型配置实现均来自 `overlays/`，通过补丁生成器注入源码。
 
 ## 已有能力和待建模块
 

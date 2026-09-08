@@ -21,7 +21,10 @@ def once(text,old,new):
 def emit(project,changes):
     parts=[]
     for path,new in changes.items():
-        old='' if path=='src/lib/utils/screen-capture.js' else original(project,path)
+        is_new=(path in ('src/lib/utils/screen-capture.js','src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte',
+                         'gateway/workstation_runtime.py','gateway/workstation_catalog.json')
+                or path.startswith('backend/open_webui/workstation_models/'))
+        old='' if is_new else original(project,path)
         assert old!=new,path+' has no changes'
         parts.extend(difflib.unified_diff(old.splitlines(keepends=True),new.splitlines(keepends=True),fromfile='a/'+path if old else '/dev/null',tofile='b/'+path))
     target=ROOT/lock['sources'][project]['patches'][0]
@@ -69,10 +72,84 @@ for path in ('src/lib/components/chat/MessageInput.svelte','src/lib/components/c
     end=s.index('\n\t};',start)+len('\n\t};')
     s=s[:start]+'\tconst screenCaptureHandler = () => captureScreenshot(inputFilesHandler, toast);'+s[end:]
     changes[path]=s
+changes['src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte']=(ROOT/'overlays/open-webui/ModelKeyDialog.svelte').read_text(encoding='utf-8')
+path='src/lib/components/chat/ModelSelector/Selector.svelte'
+s=original('open-webui',path)
+s=once(s,'<script lang="ts">','<script lang="ts">\n\timport ModelKeyDialog from "./ModelKeyDialog.svelte";\n\tlet showModelKeys = false;\n\tlet pendingModel = "";')
+s=once(s,'const selectItem = (item, index: number) => {','const applyItem = (item, index: number) => {')
+selection='''
+    const selectItem = async (item: (typeof items)[number], index: number) => {
+        if (item.value.startsWith('ws-') && !(compareEnabled && selectedValues.includes(item.value))) {
+            try {
+                const response = await fetch('/api/workstation/models/' + encodeURIComponent(item.value) + '/activate', {
+                    method: 'POST', headers: {Authorization: `Bearer ${localStorage.token}`}
+                });
+                if (response.status === 428) { pendingModel = item.value; show = false; showModelKeys = true; return; }
+                if (!response.ok) { const result = await response.json(); toast.error(typeof result.detail === 'string' ? result.detail : '模型验证失败'); return; }
+            } catch { toast.error('模型连接失败，请重试。'); return; }
+        }
+        applyItem(item, index);
+    };
+'''
+s=once(s,'</script>',selection+'\n</script>\n{#if showModelKeys}<ModelKeyDialog bind:show={showModelKeys} modelId={pendingModel} on:ready={(event) => { const item = items.find(i => i.value === event.detail); if (item) applyItem(item, items.indexOf(item)); }} />{/if}')
+changes[path]=s
+path='src/lib/components/chat/ModelSelector.svelte'
+s=original('open-webui',path)
+s=once(s,'<script lang="ts">','<script lang="ts">\n\timport ModelKeyDialog from "./ModelSelector/ModelKeyDialog.svelte";\n\tlet showModelKeys = false;')
+s=once(s,'</script>','</script>\n{#if showModelKeys}<ModelKeyDialog bind:show={showModelKeys} modelId={selectedModels[0]} on:ready={(event) => { selectedModels = [event.detail]; }} />{/if}')
+s+='\n<button type="button" class="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1" aria-label="管理模型 API Key" on:click={() => { showModelKeys = true; }}>模型密钥</button>\n'
+changes[path]=s
+for p in (ROOT/'overlays/open-webui/workstation_models').glob('*.py'):
+    changes['backend/open_webui/workstation_models/'+p.name]=p.read_text(encoding='utf-8')
+catalog_text=(ROOT/'configs/workstation/model-catalog.json').read_text(encoding='utf-8')
+changes['backend/open_webui/workstation_models/catalog.json']=catalog_text
+path='backend/open_webui/main.py'
+s=original('open-webui',path)
+s=once(s,"app.include_router(ollama.router, prefix='/ollama', tags=['ollama'])",
+       "from open_webui.workstation_models.router import router as workstation_models_router\napp.include_router(workstation_models_router, prefix='/api/workstation', tags=['workstation'])\n\napp.include_router(ollama.router, prefix='/ollama', tags=['ollama'])")
+changes[path]=s
+path='backend/open_webui/utils/chat.py'
+s=original('open-webui',path)
+s=once(s,"        # Arena model — sub-model was already resolved by process_chat_payload.",
+       "        if model_id.startswith('ws-'):\n            from open_webui.workstation_models.router import generate_chat\n            return await generate_chat(request, form_data, user)\n\n        # Arena model — sub-model was already resolved by process_chat_payload.")
+changes[path]=s
 emit('open-webui',changes)
 path='agent/prompt_builder.py'
 s=once(original('hermes-agent',path),'You are Hermes Agent, built by Nous Research. ',
        'You are the research assistant in the scientific research workstation. ')
 assert s.count('You run on Hermes Agent (by Nous Research). ')==2
 s=s.replace('You run on Hermes Agent (by Nous Research). ','')
-emit('hermes-agent',{path:s})
+agent_changes={path:s}
+agent_changes['gateway/workstation_runtime.py']=(ROOT/'overlays/hermes-agent/workstation_runtime.py').read_text(encoding='utf-8')
+agent_changes['gateway/workstation_catalog.json']=catalog_text
+path='gateway/platforms/api_server_openai_routes.py'
+s=original('hermes-agent',path)
+s=once(s,'        route = self._resolve_route(model_alias)',
+       '''        token = body.pop('_workstation_runtime', None)
+        if token is not None:
+            from gateway.workstation_runtime import decode_route
+            try:
+                return decode_route(token, self._expected_api_key(), gateway_session_key), {}, None
+            except Exception:
+                return None, {}, _error_response('Invalid workstation model authorization', 403)
+        route = self._resolve_route(model_alias)''')
+s=once(s,'            session_id = _derive_chat_session_id(system_prompt, first_user)',
+       '''            scoped_prompt = (system_prompt or '') + ('\\nWorkstation session: ' + gateway_session_key if body.get('_workstation_runtime') and gateway_session_key else '')
+            session_id = _derive_chat_session_id(scoped_prompt, first_user)''')
+agent_changes[path]=s
+path='gateway/platforms/api_server.py'
+s=original('hermes-agent',path)
+s=once(s,'            runtime_kwargs = _resolve_runtime_agent_kwargs()',
+       '            runtime_kwargs = {} if route and route.get("_workstation") else _resolve_runtime_agent_kwargs()')
+s=once(s,'        request_model = _clean_request_string(requested_model)\n        request_provider = _clean_request_string(requested_provider)\n        route_cfg = route if isinstance(route, dict) else {}',
+       '''        from gateway.workstation_runtime import apply_runtime
+        workstation_model = apply_runtime(route, runtime_kwargs)
+        if workstation_model:
+            return workstation_model, None, None, None
+        request_model = _clean_request_string(requested_model)
+        request_provider = _clean_request_string(requested_provider)
+        route_cfg = route if isinstance(route, dict) else {}''')
+s=once(s,'"fallback_model": None if confirmed_runtime_lock else GatewayRunner._load_fallback_model(),',
+       '"fallback_model": None if confirmed_runtime_lock or (route and route.get("_workstation")) else GatewayRunner._load_fallback_model(),')
+agent_changes[path]=s
+emit('hermes-agent',agent_changes)

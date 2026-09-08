@@ -9,7 +9,9 @@ const { compile } = require('svelte/compiler');
 for (const file of [
   'src/routes/auth/+page.svelte', 'src/routes/+layout.svelte',
   'src/lib/components/OnBoarding.svelte', 'src/lib/components/channel/Channel.svelte',
-  'src/lib/components/chat/MessageInput.svelte', 'src/lib/components/channel/MessageInput.svelte'
+  'src/lib/components/chat/MessageInput.svelte', 'src/lib/components/channel/MessageInput.svelte',
+  'src/lib/components/chat/ModelSelector.svelte', 'src/lib/components/chat/ModelSelector/Selector.svelte',
+  'src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte'
 ]) {
   const filename = path.join(root, 'reference/open-webui', file);
   const result = compile(fs.readFileSync(filename, 'utf8'), { filename, generate: 'client' });

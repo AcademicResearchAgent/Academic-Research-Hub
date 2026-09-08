@@ -17,8 +17,8 @@
   "production": {
     "openwebui_version": "0.11.3",
     "upstream_image": "sha256:6f1a2ca9afd03aad68621e97032e0ce6b92d14298e4d392186e7e9f1e98b9922",
-    "custom_image": "sha256:86727c5a7fd1903c69ab0187e49ace7a0fa2a85b7b2ace66a9476f0e9157c138",
-    "custom_tag": "haudi-openwebui:0.11.3-research-v4",
-    "note": "UI commit verified from original image OCI revision label; it differs from tag v0.11.3. Production uses compiled-asset overlays; source patches are the development equivalent, not an identical rebuilt image."
+    "custom_image": "sha256:083a8a6696e357f64ed6cbac89533c7d0fa5986fcacff0f43bf1fddff3f23d38",
+    "custom_tag": "haudi-openwebui:0.11.3-research-v5",
+    "note": "UI commit verified from original image OCI revision label; it differs from tag v0.11.3. v5 replaces the frontend with a complete Node 22 source build and matching patched Python backend, retaining the v4 image as the dependency base."
   }
 }
