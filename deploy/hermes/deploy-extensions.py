@@ -114,8 +114,13 @@ def deploy(root, archive):
     constraints = base / "existing-packages.txt"
     constraints.write_text("\n".join(sorted(f"{d.metadata['Name']}=={d.version}"
                            for d in importlib.metadata.distributions() if d.metadata.get("Name"))) + "\n")
-    run(str(root / "runtime/uv-bin/uv"), "pip", "install", "--python", sys.executable,
-        "--constraint", str(constraints), "-r", str(release / "mcp/paper-search/requirements.txt"))
+    # Install requirements for every MCP service shipped in this release, not
+    # just the original paper-search one. Each service directory may carry its
+    # own pinned requirements.txt.
+    requirements = sorted((release / "mcp").glob("*/requirements.txt"))
+    for req_file in requirements:
+        run(str(root / "runtime/uv-bin/uv"), "pip", "install", "--python", sys.executable,
+            "--constraint", str(constraints), "-r", str(req_file))
     run(str(root / "runtime/uv-bin/uv"), "pip", "check", "--python", sys.executable)
     ext = json.loads((release / "config.json").read_text())
     state = root / "state"

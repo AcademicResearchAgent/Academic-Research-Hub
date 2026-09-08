@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "skills": ["research-literature"],
+  "skills": ["research-literature", "ars-deep-research", "ars-academic-paper", "ars-academic-paper-reviewer", "ars-academic-pipeline"],
   "plugins": ["research-citations"],
-  "api_toolsets": ["skills", "research_citations", "research_papers"],
+  "api_toolsets": ["skills", "research_citations", "research_papers", "ars_resolvers"],
   "mcp_servers": {
     "research_papers": {
       "command": "{root}/venv/bin/python",
@@ -13,6 +13,19 @@
       "supports_parallel_tool_calls": false,
       "tools": {
         "include": ["crossref_search", "crossref_lookup", "europepmc_search", "europepmc_fulltext"],
+        "resources": false,
+        "prompts": false
+      }
+    },
+    "ars_resolvers": {
+      "command": "{root}/venv/bin/python",
+      "args": ["{release}/mcp/ars-resolvers/server.py"],
+      "enabled": true,
+      "timeout": 60,
+      "connect_timeout": 30,
+      "supports_parallel_tool_calls": false,
+      "tools": {
+        "include": ["openalex_verify", "semantic_scholar_verify", "arxiv_verify", "chinese_literature_verify"],
         "resources": false,
         "prompts": false
       }
