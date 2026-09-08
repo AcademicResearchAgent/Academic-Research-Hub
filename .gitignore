@@ -4,6 +4,8 @@
 /.local/
 /LLM_API.md
 /server.md
+/MainTask.md
+/bug.md
 /.anonymize-work/
 /清单材料/
 **/.env
