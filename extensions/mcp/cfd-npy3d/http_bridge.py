@@ -30,9 +30,6 @@ PORT = int(os.environ.get("CFD_BRIDGE_PORT", "8765"))
 _PUBLIC_BASE = "http://%s:%d" % (HOST, PORT)
 
 
-# --------------------------------------------------------------------------
-# 工具契约 -> JSON Schema
-# --------------------------------------------------------------------------
 _TYPE_MAP = {"string": "string", "integer": "integer",
              "number": "number", "boolean": "boolean"}
 
@@ -106,9 +103,6 @@ def _build_openapi() -> dict:
     }
 
 
-# --------------------------------------------------------------------------
-# 产物路径 -> 公网 URL
-# --------------------------------------------------------------------------
 _PUBLIC_RE = re.compile(
     r"(?<![A-Za-z0-9])([A-Za-z]:[\\/][^\s`|\u4e00-\u9fff]+\.(?:png|gif|jpg|jpeg|webp))",
     re.IGNORECASE)
@@ -132,9 +126,6 @@ def _md_with_public_links(md: str) -> str:
     return _PUBLIC_RE.sub(repl, md)
 
 
-# --------------------------------------------------------------------------
-# 数据目录扫描
-# --------------------------------------------------------------------------
 _PV_EXT = (".vtk", ".vtu", ".vti", ".vts", ".vtr", ".vtp", ".ex2", ".vtm",
            ".pvd", ".xdmf", ".xmf", ".stl", ".ply", ".obj", ".csv")
 _NPY_MARKERS = ("x.npy", "y.npy", "q.npy")
@@ -166,14 +157,10 @@ def _scan_data_dir(data_dir: str) -> list[tuple[str, str]]:
     return rows
 
 
-# --------------------------------------------------------------------------
-# HTTP handler
-# --------------------------------------------------------------------------
 class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "cfd-npy3d-bridge/1.0"
 
-    # ---- helpers ----
     def _send(self, code: int, body: bytes, ctype: str = "text/plain; charset=utf-8"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
@@ -198,7 +185,6 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}
 
-    # ---- routing ----
     def do_OPTIONS(self):
         self._send(204, b"")
 
@@ -232,7 +218,6 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, md.encode("utf-8"))
         return self._send(404, b"unknown tool: " + name.encode("utf-8"))
 
-    # ---- specific ----
     def _list_files(self):
         params = self._json_body()
         data_dir = params.get("data_dir") or _default_data_dir()

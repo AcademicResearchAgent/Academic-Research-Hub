@@ -20,9 +20,6 @@ OUT_ROOT = registry.OUT_ROOT
 SAMPLE_DIR = core.SAMPLE_DIR
 
 
-# --------------------------------------------------------------------------
-# npy3d_*：X/Y/Q .npy 平面场三维可视化
-# --------------------------------------------------------------------------
 def npy3d_inspect(data_dir: str | None = None) -> str:
     """检视 X/Y/Q .npy CFD 数据集，返回 Markdown 报告（见工具契约描述）。"""
     dd = data_dir or SAMPLE_DIR
@@ -61,9 +58,6 @@ def npy3d_render_animation(
     return r["md"]
 
 
-# --------------------------------------------------------------------------
-# pvdata_*：ParaView 常见格式（经 pvpython 任务桥）
-# --------------------------------------------------------------------------
 def _pv_require() -> str:
     return pvbridge.find_pvpython()
 
@@ -246,9 +240,6 @@ def pvdata_import(
     return "\n".join(lines)
 
 
-# --------------------------------------------------------------------------
-# 注册索引：name -> handler（server 与质量门共用）
-# --------------------------------------------------------------------------
 HANDLERS = {
     "npy3d_inspect": npy3d_inspect,
     "npy3d_render_surface": npy3d_render_surface,

@@ -18,9 +18,6 @@ from typing import Optional
 import numpy as np
 
 
-# --------------------------------------------------------------------------
-# 文件发现与路径安全
-# --------------------------------------------------------------------------
 def sanitize_case(name: str) -> str:
     """把自由场景名安全化成目录名（沿用主 MCP 的归档规则）。"""
     if name is None:
@@ -67,9 +64,6 @@ def _find_npy(data_dir: str, tokens: tuple) -> dict:
     return hits
 
 
-# --------------------------------------------------------------------------
-# 数据集语义推断
-# --------------------------------------------------------------------------
 @dataclass
 class NpyDataset:
     data_dir: str
@@ -206,9 +200,6 @@ def open_dataset(data_dir: str,
                       T=T, C=C, H=H, W=W, x_axis=1)
 
 
-# --------------------------------------------------------------------------
-# 绘图
-# --------------------------------------------------------------------------
 def _surface_from(ax, x, y, z):
     """带 NaN 数据的稳健 3D 曲面：基本无 NaN 用结构化 plot_surface，
     有空洞则退化为三角化表面。返回可挂 colorbar 的 mappable。"""
@@ -382,9 +373,6 @@ def render_animation(ds: NpyDataset, channel: int = 0, case: str | None = None,
                    % (path, channel, len(idx), lo, hi))
 
 
-# --------------------------------------------------------------------------
-# 点云 3D 渲染（ParaView 数据经 pvbridge 导出 npz 后使用）
-# --------------------------------------------------------------------------
 def load_npz_points(npz_path: str):
     """读 pvjob 导出的 npz，返回 (pts:(N,3) float64, val:(N,) float64)。"""
     d = np.load(npz_path)
@@ -513,7 +501,4 @@ def render_point_cloud_animation(frames, array_name, out_root, case=None,
                (path, array_name, len(frames), vmin, vmax))
 
 
-# --------------------------------------------------------------------------
-# 演示数据
-# --------------------------------------------------------------------------
 SAMPLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data")

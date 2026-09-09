@@ -61,9 +61,6 @@ mcp = _build_mcp()
 OUT_ROOT = registry.OUT_ROOT
 
 
-# --------------------------------------------------------------------------
-# 自测（行为与 1.1.0 一致；新增步骤 0 质量门 + 步骤 6 注册清单核对）
-# --------------------------------------------------------------------------
 def _selftest() -> int:
     import glob
     from checks import check_registry_consistency

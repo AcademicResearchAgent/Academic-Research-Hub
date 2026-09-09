@@ -38,9 +38,6 @@ from paraview import servermanager as sm
 from vtk.util.numpy_support import vtk_to_numpy
 import numpy as np
 
-# --------------------------------------------------------------------------- #
-# readers: 与主 pv_job.py 同源 + 常见格式兜底
-# --------------------------------------------------------------------------- #
 READERS = {
     ".vti":  "XMLImageDataReader",
     ".vtu":  "XMLUnstructuredGridReader",
@@ -90,9 +87,6 @@ def make_producer(params):
                            % (ext, e))
 
 
-# --------------------------------------------------------------------------- #
-# inspect
-# --------------------------------------------------------------------------- #
 def _arr_list(ai):
     out = []
     try:
@@ -154,9 +148,6 @@ def run_inspect(params):
     return d
 
 
-# --------------------------------------------------------------------------- #
-# points (extract -> npz)
-# --------------------------------------------------------------------------- #
 def _iter_leaves(data):
     """Yields every leaf dataset of a (possibly composite) dataset."""
     if data is None:
@@ -190,7 +181,6 @@ def _leaf_points_values(leaf, array_name):
     if arr is None:
         return None, None, 0, False          # this leaf lacks the array
     comps = int(arr.GetNumberOfComponents())
-    # ---- coordinates ----------------------------------------------------- #
     pts = None
     gp = getattr(leaf, "GetPoints", None)
     if gp is not None:
@@ -218,7 +208,6 @@ def _leaf_points_values(leaf, array_name):
             pts = None
     if pts is None or pts.shape[0] != npts:
         return None, None, 0, False
-    # ---- values (vector -> magnitude) ------------------------------------ #
     raw = vtk_to_numpy(arr)
     if comps > 1:
         val = np.sqrt((raw.astype(np.float64) ** 2).sum(axis=1))
@@ -259,7 +248,6 @@ def run_points(params):
     except Exception:                                  # noqa: BLE001
         pass
 
-    # ---- timestep selection ----------------------------------------------- #
     timesteps = []
     try:
         timesteps = [float(v) for v in producer.TimestepValues]
@@ -317,7 +305,6 @@ def run_points(params):
     val = np.concatenate(val_all, axis=0)
     del pts_all, val_all
 
-    # ---- sanity (drop non-finite) ----------------------------------------- #
     fin = np.isfinite(pts).all(axis=1) & np.isfinite(val)
     removed = int((~fin).sum())
     if removed:
@@ -325,7 +312,6 @@ def run_points(params):
     if pts.shape[0] == 0:
         raise RuntimeError("no finite points remain after filtering")
 
-    # ---- down-sample ------------------------------------------------------- #
     maxp = int(params.get("max_points") or 250000)
     orig_n = int(pts.shape[0])
     if orig_n > maxp:
@@ -354,9 +340,6 @@ def run_points(params):
     }
 
 
-# --------------------------------------------------------------------------- #
-# import2d (ParaView 数据 -> X/Y/Q .npy，供 npy3d_* 渲染规则网格曲面)
-# --------------------------------------------------------------------------- #
 def _parse_time_slice(spec, n):
     """'0' | '0-4' | 'all' -> frame index list (clamped)."""
     if n <= 1:
@@ -641,7 +624,6 @@ def run_import2d(params):
     }
 
 
-# --------------------------------------------------------------------------- #
 def main():
     if len(sys.argv) < 2:
         print("USAGE: pvpython pvjob_pvdata.py <job.json>")
