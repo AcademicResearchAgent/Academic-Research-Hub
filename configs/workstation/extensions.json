@@ -1,33 +1,84 @@
 {
   "schema_version": 1,
-  "skills": ["research-literature"],
-  "plugins": ["research-citations"],
-  "api_toolsets": ["skills", "research_citations", "research_papers", "cfd_npy3d"],
+  "skills": [
+    "research-literature",
+    "ars-deep-research",
+    "ars-academic-paper",
+    "ars-academic-paper-reviewer",
+    "ars-academic-pipeline"
+  ],
+  "plugins": [
+    "research-citations",
+    "latex-paper"
+  ],
+  "api_toolsets": [
+    "skills",
+    "research_citations",
+    "research_papers",
+    "cfd_npy3d",
+    "ars_resolvers",
+    "latex_paper"
+  ],
   "mcp_servers": {
     "cfd_npy3d": {
       "command": "{root}/venv/bin/python",
-      "args": ["{release}/mcp/cfd-npy3d/server.py"],
+      "args": [
+        "{release}/mcp/cfd-npy3d/server.py"
+      ],
       "enabled": true,
       "timeout": 60,
       "connect_timeout": 30,
       "supports_parallel_tool_calls": false,
       "tools": {
-        "include": ["npy3d_inspect", "npy3d_render_surface", "npy3d_render_animation",
-                    "pvdata_inspect", "pvdata_render_scatter3d", "pvdata_render_animation",
-                    "pvdata_import"],
+        "include": [
+          "npy3d_inspect",
+          "npy3d_render_surface",
+          "npy3d_render_animation",
+          "pvdata_inspect",
+          "pvdata_render_scatter3d",
+          "pvdata_render_animation",
+          "pvdata_import"
+        ],
         "resources": false,
         "prompts": false
       }
     },
     "research_papers": {
       "command": "{root}/venv/bin/python",
-      "args": ["{release}/mcp/paper-search/server.py"],
+      "args": [
+        "{release}/mcp/paper-search/server.py"
+      ],
       "enabled": true,
       "timeout": 60,
       "connect_timeout": 30,
       "supports_parallel_tool_calls": false,
       "tools": {
-        "include": ["crossref_search", "crossref_lookup", "europepmc_search", "europepmc_fulltext"],
+        "include": [
+          "crossref_search",
+          "crossref_lookup",
+          "europepmc_search",
+          "europepmc_fulltext"
+        ],
+        "resources": false,
+        "prompts": false
+      }
+    },
+    "ars_resolvers": {
+      "command": "{root}/venv/bin/python",
+      "args": [
+        "{release}/mcp/ars-resolvers/server.py"
+      ],
+      "enabled": true,
+      "timeout": 60,
+      "connect_timeout": 30,
+      "supports_parallel_tool_calls": false,
+      "tools": {
+        "include": [
+          "openalex_verify",
+          "semantic_scholar_verify",
+          "arxiv_verify",
+          "chinese_literature_verify"
+        ],
         "resources": false,
         "prompts": false
       }

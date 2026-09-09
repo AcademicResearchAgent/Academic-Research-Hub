@@ -41,14 +41,16 @@ def main(root):
     config = yaml.safe_load((root / "state/config.yaml").read_text())
     discover_plugins()
     try:
-        discover_mcp_tools(allowed_mcp_names=["research_papers"])
+        discover_mcp_tools(allowed_mcp_names=["research_papers", "ars_resolvers"])
         # Restrict this check to the installed extension surface. Checking every
         # optional builtin provider can trigger unrelated readiness network probes.
-        enabled = sorted(_get_platform_tools(config, "api_server") & {"skills", "research_citations", "research_papers"})
+        enabled = sorted(_get_platform_tools(config, "api_server") & {"skills", "research_citations", "research_papers", "ars_resolvers"})
         defs = get_tool_definitions(enabled_toolsets=enabled, quiet_mode=True, skip_tool_search_assembly=True)
         names = {d["function"]["name"] for d in defs}
         expected = {"skill_view", "research_citation", *("mcp__research_papers__" + n for n in
-                    ("crossref_search", "crossref_lookup", "europepmc_search", "europepmc_fulltext"))}
+                    ("crossref_search", "crossref_lookup", "europepmc_search", "europepmc_fulltext")),
+                    *("mcp__ars_resolvers__" + n for n in
+                    ("openalex_verify", "semantic_scholar_verify", "arxiv_verify", "chinese_literature_verify"))}
         assert expected <= names, f"Missing tools: {sorted(expected - names)}"
         skill = json.loads(skill_view("research-literature"))
         assert "mcp__research_papers__crossref_search" in json.dumps(skill) and not skill.get("error")
