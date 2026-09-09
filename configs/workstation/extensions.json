@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "skills": ["research-literature"],
-  "plugins": ["research-citations"],
-  "api_toolsets": ["skills", "research_citations", "research_papers"],
+  "plugins": ["research-citations", "latex-paper"],
+  "api_toolsets": ["skills", "research_citations", "research_papers", "latex_paper"],
   "mcp_servers": {
     "research_papers": {
       "command": "{root}/venv/bin/python",
