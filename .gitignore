@@ -22,7 +22,13 @@
 **/__pycache__/
 **/*.pyc
 **/*.log
+**/*.err
 **/*.pid
+**/.run/
+# cfd-npy3d 演示数据由 make_sample.py 生成（运行时产物，不入库）
+/extensions/mcp/cfd-npy3d/sample_data/
+# cfd-npy3d 渲染/导入产物（OUT_ROOT 默认 extensions/mcp/output）
+/extensions/mcp/output/
 # Historical one-time account setup includes personal account data.
 /deploy/hermes/provision-workstation-users*.py
 /deploy/hermes/.cache/

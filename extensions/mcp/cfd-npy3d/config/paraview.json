@@ -1,0 +1,19 @@
+{
+  "_comment": "ParaView 工作配置（Academic-Research-Hub 仓库内统一维护）。candidates 按顺序探测，支持 ${VAR} 环境变量展开与 glob(*)。改本文件即完成本机/服务器的 pvpython 定位配置。",
+  "pvpython": {
+    "candidates": [
+      "${PARAVIEW_PVPYTHON}",
+      "${PARAVIEW_BIN}/pvpython.exe",
+      "pvpython",
+      "D:/Program Files/ParaView 6.0.1/bin/pvpython.exe",
+      "C:/Program Files/ParaView 6.0.1/bin/pvpython.exe",
+      "/usr/bin/pvpython"
+    ],
+    "job_timeout_seconds": 600
+  },
+  "readers": {
+    "enumerated_list": "config/paraview_readers.json",
+    "fallback": "OpenDataFile",
+    "_comment": "enumerated_list：本机 pvpython 枚举的 reader/扩展名权威清单（pvdata-import 技能引用）；fallback：未映射扩展名时交给 ParaView OpenDataFile 自动探测。"
+  }
+}

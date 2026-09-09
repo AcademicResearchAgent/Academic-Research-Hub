@@ -1,0 +1,49 @@
+{
+  "name": "npy3d_render_animation",
+  "title": ".npy 时间序列三维曲面 GIF",
+  "description": "把某通道沿时间帧逐帧重建三维曲面并存为 GIF 动画。参数：data_dir(可选) 数据集目录，缺省演示数据；channel 通道号(默认0)；case(可选) 归档名；max_frames 抽样帧数(默认48)；fps(默认6)。自动在 [0,T) 内均匀抽 max_frames 帧；抽样帧含 NaN 时明确报错（换帧段/通道）。产物写到 output/cases/<case>/render/（带 case 时）或 output/render/。",
+  "family": "npy3d",
+  "data_source": "npy",
+  "requires_pvpython": false,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "data_dir",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "数据集目录（含 X/Y/Q 三个 .npy）。缺省用包内 sample_data 演示数据。"
+    },
+    {
+      "name": "channel",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "要动画化的物理量通道号，范围 [0, C)。"
+    },
+    {
+      "name": "case",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "产物归档目录名（output/cases/<case>/render/）。不填则落 output/render/。"
+    },
+    {
+      "name": "max_frames",
+      "type": "integer",
+      "required": false,
+      "default": 48,
+      "description": "沿时间均匀抽样的帧数上限。"
+    },
+    {
+      "name": "fps",
+      "type": "integer",
+      "required": false,
+      "default": 6,
+      "description": "GIF 播放帧率。"
+    }
+  ],
+  "examples": [
+    "npy3d_render_animation(data_dir=\"g:/mcp-/cfd_npy3d_mcp/sample_data\", channel=0, max_frames=24, fps=6)"
+  ]
+}

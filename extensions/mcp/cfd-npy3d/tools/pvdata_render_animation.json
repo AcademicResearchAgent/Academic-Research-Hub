@@ -1,0 +1,56 @@
+{
+  "name": "pvdata_render_animation",
+  "title": "ParaView 时变文件逐时间步点云 GIF",
+  "description": "对含时间步的 ParaView 文件逐时间步生成三维点云着色 GIF 动画。自动在全部时间步中均匀抽 max_frames 帧；每帧颜色区间统一（不闪动）。参数：file_path(必填)；array_name(可选)；max_frames(默认24)；max_points(默认120000)；fps(默认6)；case(可选) 归档名。时间步很多的文件耗时较长，建议先 pvdata_inspect 看步数再定 max_frames。",
+  "family": "pvdata",
+  "data_source": "paraview_file",
+  "requires_pvpython": true,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "file_path",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "ParaView 可读文件的绝对路径。"
+    },
+    {
+      "name": "array_name",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "要动画化的数组名；不指定则自动选首个标量。"
+    },
+    {
+      "name": "max_frames",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "description": "沿时间均匀抽样的帧数上限。"
+    },
+    {
+      "name": "max_points",
+      "type": "integer",
+      "required": false,
+      "default": 120000,
+      "description": "每帧参与绘制的最大点数（自动均匀子采样）。"
+    },
+    {
+      "name": "fps",
+      "type": "integer",
+      "required": false,
+      "default": 6,
+      "description": "GIF 播放帧率。"
+    },
+    {
+      "name": "case",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "产物归档目录名（output/cases/<case>/render/）。不填则落 output/render/。"
+    }
+  ],
+  "examples": [
+    "pvdata_render_animation(file_path=\"E:/sim/case.pvd\", array_name=\"pressure\", max_frames=24, fps=6, case=\"sim1\")"
+  ]
+}

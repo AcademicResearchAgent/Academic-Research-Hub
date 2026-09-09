@@ -1,0 +1,57 @@
+{
+  "name": "npy3d_render_surface",
+  "title": ".npy 单帧三维曲面图",
+  "description": "对 X/Y/Q .npy CFD 数据把某一帧的物理量场画成三维曲面图（z 与颜色均取 Q，(x,y) 为空间坐标），保存 PNG 后返回路径与统计。参数：data_dir(可选) 数据集目录，缺省演示数据；frame 帧号(默认0)；channels 通道选择(默认\"0\"，支持 \"all\"/\"0,2\"/\"1-3\")；case(可选) 产物归档名；azim/elev 视角。frame 超出范围会报错。产物写到 output/cases/<case>/render/（带 case 时）或 output/render/。",
+  "family": "npy3d",
+  "data_source": "npy",
+  "requires_pvpython": false,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "data_dir",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "数据集目录（含 X/Y/Q 三个 .npy）。缺省用包内 sample_data 演示数据。"
+    },
+    {
+      "name": "frame",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "要渲染的时间帧号，范围 [0, T)。"
+    },
+    {
+      "name": "channels",
+      "type": "string",
+      "required": false,
+      "default": "0",
+      "description": "通道选择：\"0\" 单通道、\"all\" 全部并排、\"0,2\" 或 \"1-3\" 指定列表/区间。"
+    },
+    {
+      "name": "case",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "产物归档目录名（output/cases/<case>/render/）。不填则落 output/render/。"
+    },
+    {
+      "name": "azim",
+      "type": "integer",
+      "required": false,
+      "default": -60,
+      "description": "3D 视图方位角（度）。"
+    },
+    {
+      "name": "elev",
+      "type": "integer",
+      "required": false,
+      "default": 35,
+      "description": "3D 视图仰角（度）。"
+    }
+  ],
+  "examples": [
+    "npy3d_render_surface(data_dir=\"g:/mcp-/cfd_npy3d_mcp/sample_data\", frame=0, channels=\"0\")",
+    "npy3d_render_surface(data_dir=\"g:/mcp-/CFD_TEST\", frame=0, channels=\"0\", case=\"naca_cylinder\")"
+  ]
+}
