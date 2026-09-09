@@ -19,6 +19,7 @@ paper = load("paper_search", "extensions/mcp/paper-search/server.py")
 plugin = load("citations", "extensions/plugins/research-citations/__init__.py")
 deploy = load("deployment", "deploy/hermes/deploy-extensions.py")
 chat = load("chat_verification", "deploy/hermes/verify-extensions-chat.py")
+resolvers = load("ars_resolvers", "extensions/mcp/ars-resolvers/server.py")
 
 
 class PaperTests(unittest.TestCase):
@@ -112,6 +113,63 @@ class TranscriptTests(unittest.TestCase):
     def test_unwrapped_plugin_error_remains_an_error(self):
         data = {"success": False, "error": "Bad DOI"}
         self.assertEqual(chat.decode_tool_result(json.dumps(data)), data)
+
+
+class ArsResolversTests(unittest.TestCase):
+    """Boundary tests for the ars-resolvers MCP adapter (no network required)."""
+
+    def test_input_validation_never_reaches_network(self):
+        # Non-mapping entry rejected before any resolver is constructed.
+        with patch.object(resolvers, "_normalize_entry", side_effect=lambda e: (_ for _ in ()).throw(ValueError("entry must be a mapping"))):
+            with self.assertRaises(ValueError):
+                resolvers.openalex_verify("not-a-dict")
+
+    def test_empty_title_rejected_for_openalex(self):
+        with self.assertRaises(ValueError):
+            resolvers.openalex_verify({"doi": "10.1234/abc", "title": "   "})
+
+    def test_entry_without_id_or_title_rejected_for_s2(self):
+        with self.assertRaises(ValueError):
+            resolvers.semantic_scholar_verify({"container_title": "Journal"})
+
+    def test_unknown_fields_are_stripped_from_entry(self):
+        entry = resolvers._normalize_entry(
+            {"title": "A paper", "doi": "10.1234/abc", "unexpected": "drop"})
+        self.assertEqual(entry, {"title": "A paper", "doi": "10.1234/abc"})
+
+    def test_degradation_normalized_into_envelope(self):
+        from _openalex_client import OpenAlexClient, OpenAlexUnavailable
+        with patch.object(OpenAlexClient, "doi_lookup_with_title_check",
+                          side_effect=OpenAlexUnavailable("upstream 429")):
+            result = resolvers.openalex_verify({"doi": "10.1234/abc", "title": "Some work"})
+        self.assertEqual(result["source"], "OpenAlex")
+        self.assertFalse(result["matched"])
+        self.assertTrue(result["degraded"])
+        self.assertIn("429", result["error"])
+        self.assertIn("retrieved_at", result)
+
+    def test_miss_returned_without_record(self):
+        from _openalex_client import OpenAlexClient
+        with patch.object(OpenAlexClient, "doi_lookup_with_title_check", return_value=None), \
+             patch.object(OpenAlexClient, "title_search", return_value=None):
+            result = resolvers.openalex_verify({"doi": "10.1234/abc", "title": "Some work"})
+        self.assertEqual(result["source"], "OpenAlex")
+        self.assertFalse(result["matched"])
+        self.assertIsNone(result["record"])
+
+    def test_chinese_resolver_skips_non_chinese_without_network(self):
+        # Resolve with an English-only entry short-circuits before any request.
+        result = resolvers.chinese_literature_verify(
+            {"title": "A purely English title", "container_title": "English Journal"})
+        self.assertEqual(result["source"], "Chinese Literature")
+        self.assertEqual(result.get("status"), "skipped")
+
+    def test_server_creates_fastmcp_instance(self):
+        try:
+            server = resolvers.create_server()
+        except ImportError:
+            self.skipTest("mcp package not installed")
+        self.assertEqual(server.name, "ars_resolvers")
 
 
 if __name__ == "__main__":
