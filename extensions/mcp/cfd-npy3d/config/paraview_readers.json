@@ -1,0 +1,288 @@
+{
+ "generated_by": "checks/export_paraview_readers.py (reader class list) + extension_map (common formats); runtime falls back to pvs.OpenDataFile for anything unmapped",
+ "environment": "ParaView 6.0.1 (VTK 9.5.2) via pvpython",
+ "summary": {
+  "total_readers": 183,
+  "common_extensions_mapped": 42,
+  "all_unmapped_extensions": "OpenDataFile auto-detect"
+ },
+ "note": "pvdata_import/pvdata_inspect/pvdata_render_* can open ANY file a ParaView reader in reader_full_list accepts. reader_full_list is enumerated live from paraview.simple (no instantiation, so third-party readers needing licenses/codecs are listed but may fail at open time); extension_map documents the common formats; anything not listed is attempted via OpenDataFile auto-detect.",
+ "reader_full_list": [
+  "ADIOS2CoreImageReader",
+  "ADIOS2VTXReader",
+  "AMReXBoxLibGridReader",
+  "AMReXBoxLibParticlesReader",
+  "AVSUCDReader",
+  "AnimateReader",
+  "AvmeshReader",
+  "BDFReader",
+  "BYUReader",
+  "CGNSSeriesReader",
+  "CMLMoleculeReader",
+  "CONVERGECFDCGNSReader",
+  "CONVERGECFDReader",
+  "CSVReader",
+  "Cesium3DTilesReader",
+  "CityGMLReader",
+  "CompositeCellGridReader",
+  "DEMReader",
+  "ENZOAMRParticlesReader",
+  "EnSightMasterServerReader",
+  "EnSightReader",
+  "EnsembleDataReader",
+  "EnzoReader",
+  "ExodusIIReader",
+  "FDSReader",
+  "FLASHAMRParticlesReader",
+  "FacetReader",
+  "FlashReader",
+  "FluentCFFCaseReader",
+  "FluentCaseReader",
+  "GDALRasterReader",
+  "GDALVectorReader",
+  "GaussianCubeReader",
+  "H5PartReader",
+  "HDF5RageReader",
+  "HDRReader",
+  "HyperTreeGridReader",
+  "IGESReader",
+  "IOSSCellGridReader",
+  "IOSSReader",
+  "ImageReader",
+  "JPEGSeriesReader",
+  "LANLX3DReader",
+  "LSDynaReader",
+  "LegacyVTKReader",
+  "MFIXReader",
+  "MRCSeriesReader",
+  "MetaFileSeriesReader",
+  "MotionFXCFGReader",
+  "Nek5000Reader",
+  "NetCDFReader",
+  "NrrdReader",
+  "OMETIFFReader",
+  "OMFReader",
+  "ObjectFileFormatOFFReader",
+  "OpenFOAMReader",
+  "OpenVDBReader",
+  "PDALReader",
+  "PDBReader",
+  "PIOReader",
+  "PLOT3DMetaFileReader",
+  "PLOT3DReader",
+  "PLYReader",
+  "PNGSeriesReader",
+  "PTSReader",
+  "PVDReader",
+  "ParticlesReader",
+  "PartitionedLegacyVTKReader",
+  "PhastaReader",
+  "RTXMLPolyDataReader",
+  "RestartedSimExodusReader",
+  "RestartedSimSpyPlotReader",
+  "SAVGReader",
+  "SEPReader",
+  "SLACDataReader",
+  "SLACParticleDataReader",
+  "STEPReader",
+  "STLReader",
+  "SegYReader",
+  "SpyPlotReader",
+  "TIFFReader",
+  "TIFFSeriesReader",
+  "TRUCHASReader",
+  "TecplotReader",
+  "TecplotTableReader",
+  "VASPAnimationReader",
+  "VASPTessellationReader",
+  "VPICReader",
+  "VRMLReader",
+  "VTKHDFReader",
+  "VelodyneAMRReader",
+  "VisItANSYSReader",
+  "VisItAUXFileReader",
+  "VisItBOVReader",
+  "VisItCEAucdReader",
+  "VisItCMATReader",
+  "VisItCTRLReader",
+  "VisItChomboReader",
+  "VisItCurve2DReader",
+  "VisItDDCMDReader",
+  "VisItDyna3DReader",
+  "VisItExtrudedVolReader",
+  "VisItFLASHReader",
+  "VisItFluentReader",
+  "VisItGGCMReader",
+  "VisItGTCReader",
+  "VisItGULPReader",
+  "VisItGadgetReader",
+  "VisItH5NimrodReader",
+  "VisItImageReader",
+  "VisItLAMMPSDumpReader",
+  "VisItLAMMPSStructureReader",
+  "VisItLinesReader",
+  "VisItM3DC1Reader",
+  "VisItM3DReader",
+  "VisItMFIXCDFReader",
+  "VisItMFIXReader",
+  "VisItMM5Reader",
+  "VisItMirandaReader",
+  "VisItNASTRANReader",
+  "VisItNek5000Reader",
+  "VisItNetCDFADAPTReader",
+  "VisItNetCDFCCSM_MTSDReader",
+  "VisItNetCDFCCSM_STSDReader",
+  "VisItNetCDFFVCOMParticleReader",
+  "VisItNetCDFFVCOM_MTMDReader",
+  "VisItNetCDFFVCOM_MTSDReader",
+  "VisItNetCDFFVCOM_STSDReader",
+  "VisItNetCDFLODIParticleReader",
+  "VisItNetCDFLODIReader",
+  "VisItOVERFLOWReader",
+  "VisItOpenFOAMReader",
+  "VisItPATRANReader",
+  "VisItPFLOTRANReader",
+  "VisItPLOT2DReader",
+  "VisItPLOT3DReader",
+  "VisItParaDiSTecplotReader",
+  "VisItParaDisReader",
+  "VisItPixieReader",
+  "VisItPoint3DReader",
+  "VisItProteinDataBankReader",
+  "VisItRAWReader",
+  "VisItSAMRAIReader",
+  "VisItSARReader",
+  "VisItSASReader",
+  "VisItSiloReader",
+  "VisItSpheralReader",
+  "VisItTFTReader",
+  "VisItTSurfReader",
+  "VisItTecplotBinaryReader",
+  "VisItTecplotReader",
+  "VisItTetradReader",
+  "VisItUNICReader",
+  "VisItVASPCHGCARReader",
+  "VisItVASPOUTCARReader",
+  "VisItVASPPOSCARReader",
+  "VisItVelodyneReader",
+  "VisItVsReader",
+  "VisItXYZReader",
+  "VisItXmdvReader",
+  "WavefrontOBJReader",
+  "XDMFReader",
+  "XMLImageDataReader",
+  "XMLMultiBlockDataReader",
+  "XMLPartitionedDatasetCollectionReader",
+  "XMLPartitionedDatasetReader",
+  "XMLPartitionedHyperTreeGridReader",
+  "XMLPartitionedImageDataReader",
+  "XMLPartitionedPolydataReader",
+  "XMLPartitionedRectilinearGridReader",
+  "XMLPartitionedStructuredGridReader",
+  "XMLPartitionedTableReader",
+  "XMLPartitionedUnstructuredGridReader",
+  "XMLPolyDataReader",
+  "XMLRectilinearGridReader",
+  "XMLStructuredGridReader",
+  "XMLTableReader",
+  "XMLUniformGridAMRReader",
+  "XMLUnstructuredGridReader",
+  "XYZReader",
+  "glTFReader",
+  "openPMDReader",
+  "proSTARSTARCDReader"
+ ],
+ "extension_map": {
+  "vti": [
+   "XMLImageDataReader"
+  ],
+  "vtu": [
+   "XMLUnstructuredGridReader"
+  ],
+  "vtp": [
+   "XMLPolyDataReader"
+  ],
+  "vts": [
+   "XMLStructuredGridReader"
+  ],
+  "vtr": [
+   "XMLRectilinearGridReader"
+  ],
+  "vtk": [
+   "LegacyVTKReader"
+  ],
+  "vtm": [
+   "XMLMultiBlockDataReader"
+  ],
+  "vtmb": [],
+  "pvtp": [],
+  "pvtu": [],
+  "pvti": [],
+  "pvd": [
+   "PVDReader"
+  ],
+  "xdmf": [
+   "XDMFReader"
+  ],
+  "xmf": [
+   "XDMFReader"
+  ],
+  "ex2": [
+   "ExodusIIReader"
+  ],
+  "exo": [
+   "ExodusIIReader"
+  ],
+  "e": [
+   "ExodusIIReader"
+  ],
+  "g": [
+   "BYUReader"
+  ],
+  "foam": [
+   "OpenFOAMReader"
+  ],
+  "cas": [],
+  "dat": [],
+  "nc": [],
+  "h5": [],
+  "h5part": [
+   "H5PartReader"
+  ],
+  "silo": [],
+  "p3d": [],
+  "plot3d": [],
+  "cgns": [],
+  "stl": [
+   "STLReader"
+  ],
+  "ply": [
+   "PLYReader"
+  ],
+  "obj": [],
+  "3ds": [],
+  "dem": [
+   "DEMReader"
+  ],
+  "csv": [
+   "CSVReader"
+  ],
+  "cosmo": [],
+  "gadget": [],
+  "gmv": [],
+  "ucd": [
+   "AVSUCDReader"
+  ],
+  "h5m": [],
+  "mfi": [
+   "MFIXReader"
+  ],
+  "res": [
+   "MFIXReader"
+  ],
+  "vtkhdf": [
+   "VTKHDFReader"
+  ]
+ },
+ "fallback": "OpenDataFile"
+}

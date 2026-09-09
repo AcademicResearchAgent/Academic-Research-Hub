@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "cfd-npy-3d": {
+      "command": "python",
+      "args": ["g:/mcp-/cfd_npy3d_mcp/server.py"],
+      "env": {
+        "NPY3D_OUT_ROOT": "g:/mcp-/output",
+        "PARAVIEW_PVPYTHON": "D:/Program Files/ParaView 6.0.1/bin/pvpython.exe"
+      }
+    }
+  }
+}

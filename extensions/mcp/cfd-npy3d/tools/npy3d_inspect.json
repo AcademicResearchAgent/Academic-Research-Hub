@@ -1,0 +1,22 @@
+{
+  "name": "npy3d_inspect",
+  "title": "检视 X/Y/Q .npy 数据集",
+  "description": "检视 X/Y/Q .npy CFD 数据集：报告命中的文件、Q 形状、推断出的时间帧 T / 物理量通道 C / 网格 H×W、坐标范围与第 0 帧各通道统计。参数：data_dir(可选) 为含 X/Y/Q 三个 .npy 的目录，缺省用包内 sample_data 演示数据。返回 Markdown 检视报告。",
+  "family": "npy3d",
+  "data_source": "npy",
+  "requires_pvpython": false,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "data_dir",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "数据集目录（含 X/Y/Q 三个 .npy）。缺省用包内 sample_data 演示数据。"
+    }
+  ],
+  "examples": [
+    "npy3d_inspect(data_dir=\"g:/mcp-/cfd_npy3d_mcp/sample_data\")",
+    "npy3d_inspect(data_dir=\"g:/mcp-/CFD_TEST\")"
+  ]
+}

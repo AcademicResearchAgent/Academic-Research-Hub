@@ -1,0 +1,70 @@
+{
+  "name": "pvdata_render_scatter3d",
+  "title": "ParaView 文件三维点云着色图",
+  "description": "读取任一 ParaView 文件某时间步的网格点 + 指定数组（不指定则自动选首个标量；CELL_DATA 会自动转成 POINT_DATA；向量数组取模），把全部点画成三维散点着色图（点 = 空间坐标，颜色 = 数组值）并保存 PNG。大数据自动均匀子采样到 max_points。参数：file_path(必填)；array_name(可选)；timestep_index(默认0)；max_points(默认250000)；case(可选) 归档名；azim/elev/cmap 视图与配色。产物归档与其它工具一致。",
+  "family": "pvdata",
+  "data_source": "paraview_file",
+  "requires_pvpython": true,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "file_path",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "ParaView 可读文件的绝对路径。"
+    },
+    {
+      "name": "array_name",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "要着色的数组名；不指定则自动选首个标量。"
+    },
+    {
+      "name": "timestep_index",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "时间步序号（从 0 开始）。"
+    },
+    {
+      "name": "max_points",
+      "type": "integer",
+      "required": false,
+      "default": 250000,
+      "description": "参与绘制的最大点数（自动均匀子采样）。"
+    },
+    {
+      "name": "case",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "产物归档目录名（output/cases/<case>/render/）。不填则落 output/render/。"
+    },
+    {
+      "name": "azim",
+      "type": "integer",
+      "required": false,
+      "default": -55,
+      "description": "3D 视图方位角（度）。"
+    },
+    {
+      "name": "elev",
+      "type": "integer",
+      "required": false,
+      "default": 25,
+      "description": "3D 视图仰角（度）。"
+    },
+    {
+      "name": "cmap",
+      "type": "string",
+      "required": false,
+      "default": "coolwarm",
+      "description": "matplotlib 颜色映射名。"
+    }
+  ],
+  "examples": [
+    "pvdata_render_scatter3d(file_path=\"D:/Program Files/ParaView 6.0.1/examples/disk_out_ref.ex2\", array_name=\"Temp\", timestep_index=0, case=\"mocvd_reactor\")"
+  ]
+}

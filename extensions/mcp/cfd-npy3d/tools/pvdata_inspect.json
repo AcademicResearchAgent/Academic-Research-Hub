@@ -1,0 +1,21 @@
+{
+  "name": "pvdata_inspect",
+  "title": "检视 ParaView 可读文件",
+  "description": "检视任意 ParaView 可读文件（.vtu/.vtp/.vti/.vts/.vtr/.vtk/.vtm/.ex2/.pvd/.xdmf/.stl/.ply/.csv...）：返回 reader 类型、包围盒、点/单元数、时间步列表、点/单元数组名称与范围。参数：file_path(必填) 文件路径。需本机装有 pvpython（ParaView）。",
+  "family": "pvdata",
+  "data_source": "paraview_file",
+  "requires_pvpython": true,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "file_path",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "ParaView 可读文件的绝对路径。"
+    }
+  ],
+  "examples": [
+    "pvdata_inspect(file_path=\"D:/Program Files/ParaView 6.0.1/examples/disk_out_ref.ex2\")"
+  ]
+}

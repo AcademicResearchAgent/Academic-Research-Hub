@@ -116,6 +116,8 @@ def deploy(root, archive):
                            for d in importlib.metadata.distributions() if d.metadata.get("Name"))) + "\n")
     run(str(root / "runtime/uv-bin/uv"), "pip", "install", "--python", sys.executable,
         "--constraint", str(constraints), "-r", str(release / "mcp/paper-search/requirements.txt"))
+    run(str(root / "runtime/uv-bin/uv"), "pip", "install", "--python", sys.executable,
+        "--constraint", str(constraints), "-r", str(release / "mcp/cfd-npy3d/requirements.txt"))
     run(str(root / "runtime/uv-bin/uv"), "pip", "check", "--python", sys.executable)
     ext = json.loads((release / "config.json").read_text())
     state = root / "state"

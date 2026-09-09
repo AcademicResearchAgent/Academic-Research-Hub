@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     files = {}
     for path in sorted((ROOT / "extensions").rglob("*")):
-        if path.is_file() and "__pycache__" not in path.parts and path.suffix in {".py", ".md", ".yaml", ".txt"}:
+        # .json 契约文件（tools/*.json、manifest.json 等）随扩展一起归档。
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix in {".py", ".md", ".yaml", ".txt", ".json"}:
             files[path.relative_to(ROOT / "extensions").as_posix()] = path.read_bytes().replace(b"\r\n", b"\n")
     files["config.json"] = (ROOT / "configs/workstation/extensions.json").read_bytes().replace(b"\r\n", b"\n")
     for name in ("deploy-extensions.py", "verify-extensions.py"):

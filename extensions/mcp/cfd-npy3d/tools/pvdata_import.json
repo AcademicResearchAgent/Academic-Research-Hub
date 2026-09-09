@@ -1,0 +1,56 @@
+{
+  "name": "pvdata_import",
+  "title": "ParaView 数据导入为 X/Y/Q 规则场 (.npy)",
+  "description": "把 ParaView 可读文件（任意 reader 格式）中位于 x-y 平面的 2D 数据场导入为本工具链统一的 X/Y/Q .npy（X.npy/Y.npy/Q.npy），供 npy3d_inspect / npy3d_render_surface / npy3d_render_animation 渲染规则网格曲面与动画。支持时间步文件按 time_slice 抽取帧；结构化网格（vtkImageData/vtkRectilinearGrid/vtkStructuredGrid）保持原网格直接导出，非结构化/多块数据自动合并并重采样为规则 W×H（默认长轴 320，可用 sample_w/sample_h 覆盖，域外为 NaN）；z 方向有厚度（真三维体积场）会拒绝并提示改用 pvdata_render_scatter3d。输出 data_dir 会写入返回的 markdown，可直接作为 npy3d_* 工具的 data_dir。",
+  "family": "pvdata",
+  "data_source": "paraview_file",
+  "requires_pvpython": true,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "file_path",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "ParaView 可读文件的绝对路径（.vtu/.vtp/.vti/.vts/.vtr/.vtk/.vtm/.ex2/.pvd/.xdmf/.nc/.foam/.stl/.ply/.obj 等全部 reader 格式）。"
+    },
+    {
+      "name": "array_name",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "要导出的数组名；不指定则自动选首个标量。向量/多分量自动取模。"
+    },
+    {
+      "name": "time_slice",
+      "type": "string",
+      "required": false,
+      "default": "0",
+      "description": "时间帧选择：\"0\"（默认单帧）/\"0-4\"（区间含端点）/\"all\"（全部时间步，仅静态网格文件建议用）。"
+    },
+    {
+      "name": "sample_w",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "重采样目标宽（列数）。0 = 自动（长轴 320）。仅非结构化/多块数据重采样时生效。"
+    },
+    {
+      "name": "sample_h",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "重采样目标高（行数）。0 = 自动按数据纵横比。仅非结构化/多块数据重采样时生效。"
+    },
+    {
+      "name": "case",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "产物归档目录名（output/cases/<case>/data/）。不填则用文件名生成 output/import/<stem>/data/。"
+    }
+  ],
+  "examples": [
+    "pvdata_import(file_path=\"E:/sim/surface.vtu\", array_name=\"pressure\", time_slice=\"0-9\", sample_w=640, case=\"surface\")"
+  ]
+}

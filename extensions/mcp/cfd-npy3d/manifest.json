@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "server": "cfd-npy-3d",
+  "package_version": "1.2.0",
+  "comment": "cfd_npy3d_mcp 工具注册清单（契约驱动层）。tools 数组顺序即注册顺序；skills 为本包携带的 SKILL.md 技能描述层（供 Claude Code/CodeBuddy skill 方式二选一使用）。",
+  "tools": [
+    "tools/npy3d_inspect.json",
+    "tools/npy3d_render_surface.json",
+    "tools/npy3d_render_animation.json",
+    "tools/pvdata_inspect.json",
+    "tools/pvdata_render_scatter3d.json",
+    "tools/pvdata_render_animation.json",
+    "tools/pvdata_import.json"
+  ],
+  "skills": [
+    "skills/npy3d_visualization",
+    "skills/pvdata_visualization",
+    "skills/pvdata_import"
+  ]
+}
