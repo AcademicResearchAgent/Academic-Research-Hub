@@ -1,0 +1,9 @@
+name: latex-paper
+version: "2.0.0"
+description: Generate and package LaTeX projects from ZIP templates, images and confirmed research material without compiling them.
+author: AcademicResearchAgent
+provides_tools:
+  - latex_template_inspect
+  - latex_project_generate
+  - latex_project_validate
+  - latex_project_confirm_package
