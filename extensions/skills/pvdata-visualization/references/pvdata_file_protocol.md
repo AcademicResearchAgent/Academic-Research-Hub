@@ -17,7 +17,9 @@ MCP 工具 (普通 Python)
 
 经 pvpython 内置 reader 映射读取（reader 映射与主 MCP 的 `pv_job.py` 同构），
 覆盖常见扩展名：`.vtu/.vtp/.vti/.vts/.vtr/.vtk/.vtm/.ex2/.exo/.pvd/.xdmf/
-.stl/.ply/.obj/.csv` 等。扩展名无法自动识别时可先跑 `pvdata_inspect` 看报错。
+.stl/.ply/.obj/.csv` 等。扩展名无法自动识别时可先跑
+`mcp__cfd_npy3d__pvdata_inspect` 看报错。完整 reader 清单见
+`extensions/mcp/cfd-npy3d/config/paraview_readers.json`。
 
 ## 时间步
 

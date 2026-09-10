@@ -78,6 +78,13 @@ def main(root):
         assert expected <= names, f"Missing tools: {sorted(expected - names)}"
         skill = json.loads(skill_view("research-literature"))
         assert "mcp__research_papers__crossref_search" in json.dumps(skill) and not skill.get("error")
+        loaded_skills = ["research-literature"]
+        for name, tool in (("npy3d-visualization", "mcp__cfd_npy3d__npy3d_render_surface"),
+                           ("pvdata-visualization", "mcp__cfd_npy3d__pvdata_render_scatter3d"),
+                           ("pvdata-import", "mcp__cfd_npy3d__pvdata_import")):
+            loaded = json.loads(skill_view(name))
+            assert tool in json.dumps(loaded) and not loaded.get("error"), f"skill {name} failed to load"
+            loaded_skills.append(name)
         for name in ("ars-deep-research", "ars-academic-paper", "ars-academic-paper-reviewer", "ars-academic-pipeline", "npy3d-visualization", "pvdata-import", "pvdata-visualization", "latex-paper"):
             assert not json.loads(skill_view(name)).get("error"), "Skill missing: " + name
 
@@ -118,6 +125,8 @@ def main(root):
         assert citation["success"] and paper["doi"] in citation["source_url"]
         report = {"status": "pass", "tools": sorted(expected), "crossref_doi": paper["doi"],
                   "europepmc_pmcid": open_paper["pmcid"], "fulltext_chars": len(fulltext["text"]),
+                  "skill_loaded": "research-literature", "skills_loaded": loaded_skills,
+                  "citation_verified_by_plugin": citation["verified"]}
                   "skill_loaded": "research-literature", "citation_verified_by_plugin": citation["verified"]}
         report.update({'latex_template_inspected': True, 'cfd_rendered': True, 'ars_registered': True, 'skills_loaded': 9})
         report['skill_scope'] = skill_scope

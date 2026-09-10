@@ -18,7 +18,6 @@ CONFIG_PATH = os.path.join(BASE, "config", "paraview.json")
 PV_JOB = os.path.join(BASE, "pvjob_pvdata.py")
 RUN_DIR = os.path.join(BASE, ".run")
 
-# 内置兜底候选（config/paraview.json 未提供时使用）
 _BUILTIN_CANDIDATES = [
     r"D:\Program Files\ParaView 6.0.1\bin\pvpython.exe",
     r"C:\Program Files\ParaView 6.0.1\bin\pvpython.exe",
