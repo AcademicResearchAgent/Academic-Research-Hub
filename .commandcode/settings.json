@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(.venvScriptspython.exe:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

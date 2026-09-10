@@ -9,7 +9,8 @@
   ],
   "plugins": [
     "research-citations",
-    "latex-paper"
+    "latex-paper",
+    "research-frontier"
   ],
   "api_toolsets": [
     "skills",
@@ -17,7 +18,8 @@
     "research_papers",
     "cfd_npy3d",
     "ars_resolvers",
-    "latex_paper"
+    "latex_paper",
+    "research_frontier"
   ],
   "mcp_servers": {
     "cfd_npy3d": {

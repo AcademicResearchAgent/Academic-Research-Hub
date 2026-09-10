@@ -44,13 +44,15 @@ def main(root):
         discover_mcp_tools(allowed_mcp_names=["research_papers", "ars_resolvers"])
         # Restrict this check to the installed extension surface. Checking every
         # optional builtin provider can trigger unrelated readiness network probes.
-        enabled = sorted(_get_platform_tools(config, "api_server") & {"skills", "research_citations", "research_papers", "ars_resolvers"})
+        enabled = sorted(_get_platform_tools(config, "api_server") & {"skills", "research_citations", "research_papers", "ars_resolvers", "research_frontier"})
         defs = get_tool_definitions(enabled_toolsets=enabled, quiet_mode=True, skip_tool_search_assembly=True)
         names = {d["function"]["name"] for d in defs}
         expected = {"skill_view", "research_citation", *("mcp__research_papers__" + n for n in
                     ("crossref_search", "crossref_lookup", "europepmc_search", "europepmc_fulltext")),
                     *("mcp__ars_resolvers__" + n for n in
-                    ("openalex_verify", "semantic_scholar_verify", "arxiv_verify", "chinese_literature_verify"))}
+                    ("openalex_verify", "semantic_scholar_verify", "arxiv_verify", "chinese_literature_verify")),
+                    "frontier_corpus_profile", "frontier_hotspot_analysis",
+                    "frontier_gap_analysis", "frontier_report_build"}
         assert expected <= names, f"Missing tools: {sorted(expected - names)}"
         skill = json.loads(skill_view("research-literature"))
         assert "mcp__research_papers__crossref_search" in json.dumps(skill) and not skill.get("error")
@@ -68,7 +70,13 @@ def main(root):
         assert fulltext["evidence_level"] == "fulltext_excerpt" and fulltext["text"]
         citation = call("research_citation", {"title": paper["title"], "doi": paper["doi"]})
         assert citation["success"] and paper["doi"] in citation["source_url"]
+        frontier = call("frontier_hotspot_analysis", {
+            "records": [{"title": "CRISPR screening", "year": 2020, "keywords": ["crispr"]},
+                        {"title": "Machine learning for CRISPR", "year": 2024, "keywords": ["machine learning", "crispr"]}],
+            "text_fields": ["keywords"], "case": "verify"})
+        assert frontier["success"] and frontier["terms"], "frontier plugin produced no terms"
         report = {"status": "pass", "tools": sorted(expected), "crossref_doi": paper["doi"],
+                  "frontier_top_term": frontier["terms"][0]["term"],
                   "europepmc_pmcid": open_paper["pmcid"], "fulltext_chars": len(fulltext["text"]),
                   "skill_loaded": "research-literature", "citation_verified_by_plugin": citation["verified"]}
         (root / "extensions/verification.json").write_text(json.dumps(report, indent=2))
