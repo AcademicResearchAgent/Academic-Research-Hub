@@ -1,9 +1,12 @@
 """Boundary checks without network, model keys, or a running Hermes installation."""
 import importlib.util
 import json
+import hashlib
 from pathlib import Path
 import re
 import unittest
+import tempfile
+import zipfile
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,6 +89,54 @@ class PluginTests(unittest.TestCase):
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_skill_scope_filters_unrelated_and_duplicate_entries(self):
+        ext = {'skills': ['research-literature', 'latex-paper'],
+               'skill_policy': {'include_upstream': ['pdf']}}
+        initial = {'skills': {'disabled': ['manual-stop'], 'project_discovery': True,
+                             'platform_disabled': {'telegram': ['pdf']}}}
+        inventory = ['research-literature', 'latex-paper', 'latex-paper:latex-paper',
+                     'pdf', 'hermes-agent', 'songwriting-and-ai-music']
+        result = deploy.apply_skill_policy(initial, ext, inventory)
+        self.assertEqual(result['skills']['disabled'],
+                         ['latex-paper:latex-paper', 'manual-stop', 'songwriting-and-ai-music'])
+        self.assertTrue(result['skills']['project_discovery'])
+        self.assertEqual(result['skills']['platform_disabled'], initial['skills']['platform_disabled'])
+        self.assertEqual(initial['skills']['disabled'], ['manual-stop'])
+        self.assertEqual(result, deploy.apply_skill_policy(result, ext, inventory))
+        ext['skill_policy']['include_upstream'].append('songwriting-and-ai-music')
+        expanded = deploy.apply_skill_policy(result, ext, inventory + ['new-unreviewed-skill'])
+        self.assertNotIn('songwriting-and-ai-music', expanded['skills']['disabled'])
+        self.assertIn('new-unreviewed-skill', expanded['skills']['disabled'])
+        self.assertIn('manual-stop', expanded['skills']['disabled'])
+
+    def test_redeploy_handles_skill_and_plugin_with_same_name(self):
+        ext = {'skills': ['latex-paper'], 'plugins': ['latex-paper'], 'api_toolsets': [], 'mcp_servers': {}}
+        files = {'config.json': json.dumps(ext).encode(), 'skills/latex-paper/SKILL.md': b'skill',
+                 'plugins/latex-paper/plugin.yaml': b'plugin'}
+        digest = hashlib.sha256()
+        for name, content in sorted(files.items()):
+            digest.update(name.encode() + b'\0' + content)
+        manifest = {'release': digest.hexdigest()[:16], 'files': {n: hashlib.sha256(b).hexdigest() for n, b in files.items()}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'state').mkdir()
+            (root / 'source').mkdir()
+            (root / 'state/config.yaml').write_text('{}')
+            archive = root / 'extensions.zip'
+            with zipfile.ZipFile(archive, 'w') as z:
+                for name, content in files.items():
+                    z.writestr(name, content)
+                z.writestr('manifest.json', json.dumps(manifest))
+            with patch.object(deploy, 'run'), patch.object(deploy, 'health'):
+                deploy.deploy(root, archive)
+                deploy.deploy(root, archive)
+            self.assertEqual((root / 'state/skills/latex-paper/SKILL.md').read_bytes(), b'skill')
+            self.assertEqual((root / 'state/plugins/latex-paper/plugin.yaml').read_bytes(), b'plugin')
+            backups = list((root / 'extensions/backups').glob('*/previous'))
+            self.assertEqual(len(backups), 1)
+            self.assertTrue((backups[0] / 'skills/latex-paper/SKILL.md').exists())
+            self.assertTrue((backups[0] / 'plugins/latex-paper/plugin.yaml').exists())
+
     def test_idempotent_merge_preserves_unrelated_configuration(self):
         ext = json.loads((ROOT / "configs/workstation/extensions.json").read_text())
         initial = {"model": "user-model", "mcp_servers": {"existing": {"url": "https://example.org/mcp"}},
@@ -98,6 +149,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(merged["platform_toolsets"]["telegram"], ["web"])
         self.assertEqual(merged["plugins"]["disabled"], ["other"])
         self.assertNotIn("research_papers", initial["mcp_servers"])
+        self.assertEqual(Path(merged['mcp_servers']['cfd_npy3d']['env']['NPY3D_OUT_ROOT']), Path('/srv/hub/workspace/artifacts/cfd'))
 
     def test_empty_tool_selection_does_not_enable_all_builtin_tools(self):
         ext = json.loads((ROOT / "configs/workstation/extensions.json").read_text())
@@ -112,6 +164,10 @@ class SkillTests(unittest.TestCase):
         self.ext = json.loads((ROOT / "configs/workstation/extensions.json").read_text(encoding="utf-8"))
         self.skills_dir = ROOT / "extensions/skills"
 
+    def _skill_dir(self, name):
+        source = self.ext.get("skill_sources", {}).get(name)
+        return ROOT / "extensions" / source if source else self.skills_dir / name
+
     def _fields(self, path):
         text = path.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("---\n"), f"{path} has no frontmatter")
@@ -123,7 +179,7 @@ class SkillTests(unittest.TestCase):
             with self.subTest(skill=name):
                 self.assertEqual(name, name.lower())
                 self.assertNotIn("_", name)
-                path = self.skills_dir / name / "SKILL.md"
+                path = self._skill_dir(name) / "SKILL.md"
                 self.assertTrue(path.is_file(), f"missing {path}")
                 fields = self._fields(path)
                 self.assertEqual(fields.get("name"), name)
@@ -141,7 +197,7 @@ class SkillTests(unittest.TestCase):
         }
         pattern = re.compile(r"mcp__[a-z0-9_]+__[a-z0-9_]+")
         for name in self.ext["skills"]:
-            for path in (self.skills_dir / name).rglob("*.md"):
+            for path in self._skill_dir(name).rglob("*.md"):
                 for found in set(pattern.findall(path.read_text(encoding="utf-8"))):
                     with self.subTest(skill=name, file=path.name, tool=found):
                         self.assertIn(found, registered, f"{path.name} references unregistered {found}")

@@ -35,7 +35,7 @@ Hermes 的本地基线是 `693641aa8b4359c602283bdbbc14041e03bc47bc`，版本 0.
 
 UI 显示版本 0.11.3，但原始 `main-slim` 镜像的 OCI `org.opencontainers.image.revision` 为 `0a7c15832fb30b1903753e83f81dc7d27e5b0944`。正式标签 `v0.11.3` 指向 `2a960a59fe1dbbd35282f0556b3666d81102e781`。开发必须使用锁文件中的实际镜像提交，而不是只看版本号或继续拉取浮动 `main`。
 
-生产 UI 为 `haudi-openwebui:0.11.3-research-v5`，镜像 ID 与基线 ID 记录在根目录锁文件。v5 使用固定上游源码加产品补丁，已在 Node.js 22 下完整构建前端，并替换对应 Python 后端；依赖层沿用 v4。模型目录、账号密钥和实际 Agent 调用已完成验收。发布材料在服务器 `model-releases/` 下，开发仍以团队仓库和固定上游检出为准。截图与模型配置实现均来自 `overlays/`，通过补丁生成器注入源码。
+生产 UI 为 `haudi-openwebui:0.11.3-research-v8`，镜像 ID 与基线 ID 记录在根目录锁文件。v5 使用固定上游源码加产品补丁，在 Node.js 22 下完整构建前端并替换对应 Python 后端，依赖层沿用 v4。v6 接通思考流与工具状态，同时部署 Hermes API 思考回调补丁，详见 [流式显示说明](STREAMING.md)。v7 再次完整构建前端，提供按账号自动检测的模型状态，精简目录和行内标注，详见 [模型选择说明](MODEL-SELECTION.md)。v8 在新会话中按列表顺序自动选择第一个可用模型，保留已有会话的选择。发布材料分别在服务器 `model-releases/`、`streaming-releases/` 下，开发仍以团队仓库和固定上游检出为准。截图、模型配置和流式转发实现均来自 `overlays/`，通过补丁生成器注入源码。
 
 ## 已有能力和待建模块
 

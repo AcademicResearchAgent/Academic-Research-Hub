@@ -11,7 +11,14 @@ for (const file of [
   'src/lib/components/OnBoarding.svelte', 'src/lib/components/channel/Channel.svelte',
   'src/lib/components/chat/MessageInput.svelte', 'src/lib/components/channel/MessageInput.svelte',
   'src/lib/components/chat/ModelSelector.svelte', 'src/lib/components/chat/ModelSelector/Selector.svelte',
-  'src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte'
+  'src/lib/components/chat/ModelSelector/ModelKeyDialog.svelte',
+  'src/lib/components/chat/ModelSelector/ModelItem.svelte', 'src/lib/components/chat/Chat.svelte',
+  'src/lib/components/chat/Messages/ResponseMessage/ResearchActivity.svelte',
+  'src/lib/components/chat/Messages/ResponseMessage/StatusHistory.svelte',
+  'src/lib/components/chat/Messages/ResponseMessage.svelte',
+  'src/lib/components/layout/Sidebar.svelte',
+  'src/lib/components/workspaces/WorkspaceSidebar.svelte',
+  'src/lib/components/workspaces/WorkspacePreview.svelte'
 ]) {
   const filename = path.join(root, 'reference/open-webui', file);
   const result = compile(fs.readFileSync(filename, 'utf8'), { filename, generate: 'client' });

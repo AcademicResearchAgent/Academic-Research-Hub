@@ -3,11 +3,13 @@
 /.build/
 /.local/
 /LLM_API.md
+/todo.md
 /server.md
 /[Mm]ain[Tt]ask.md
 /bug.md
 /.anonymize-work/
 /清单材料/
+/临时文档/
 **/.env
 **/.env.*
 !**/.env.example

@@ -59,10 +59,161 @@
 +                    'api_mode':'chat_completions','credential_pool':None,'max_tokens':8192})
 +    return route['model']
 --- /dev/null
++++ b/gateway/workstation_activity.py
+@@ -0,0 +1,147 @@
++"""Public, bounded tool receipts. No model calls; never forward raw args/output."""
++import json
++import re
++import time
++from urllib.parse import urlsplit, urlunsplit
++
++
++def clean(value, limit=320):
++    if not isinstance(value, (str, int, float)):
++        return ""
++    value = re.sub(r"(?i)(?:sk-[\w-]+|bearer\s+\S+|(?:api[_-]?key|token|password|secret)\s*[:=]\s*[^\s&,;]+)", "[已隐藏凭据]", str(value))
++    value = re.sub(r"https?://\S+", lambda m: safe_url(m[0]), value)
++    return " ".join(value.split())[:limit]
++
++
++def safe_url(value):
++    try:
++        p = urlsplit(str(value))
++        if p.scheme not in {"http", "https"} or not p.hostname:
++            return ""
++        # Strip userinfo, query and fragment, including signed download credentials.
++        path = re.sub(r"(?i)sk-[\w-]+", "[redacted]", p.path)
++        return urlunsplit((p.scheme, p.hostname, path, "", ""))[:1000]
++    except ValueError:
++        return ""
++
++
++def decode(value, depth=0):
++    if depth > 6:
++        return {}
++    if isinstance(value, str):
++        if len(value) > 2_000_000:
++            return {}
++        try:
++            return decode(json.loads(value), depth + 1)
++        except (ValueError, TypeError):
++            return {"error": True} if re.match(r"\s*(error|failed|exception|blocked)\b", value, re.I) else {}
++    if isinstance(value, list):
++        for item in value[:10]:
++            if isinstance(item, dict) and item.get('type') == 'text':
++                return decode(item.get('text'), depth + 1)
++        return {}
++    if not isinstance(value, dict):
++        return {}
++    if value.get("isError") or value.get("error") or value.get("success") is False:
++        return {"error": True}
++    if 'result' in value and isinstance(value['result'], (dict, list, str)):
++        return decode(value['result'], depth + 1)
++    if isinstance(value.get("structuredContent"), dict):
++        return decode(value["structuredContent"], depth + 1)
++    if isinstance(value.get("content"), list):
++        for item in value["content"][:10]:
++            if isinstance(item, dict) and item.get("type") == "text":
++                result = decode(item.get("text"), depth + 1)
++                if result:
++                    return result
++    return value
++
++
++def start_activity(tool, args):
++    args = decode(args)
++    name = tool.rsplit("__", 1)[-1]
++    source = "Crossref" if name.startswith("crossref_") else "Europe PMC" if name.startswith("europepmc_") else ""
++    title, detail = clean(tool, 100), ""
++    if name in {"crossref_search", "europepmc_search", "web_search"}:
++        title = "检索 · " + (source or "网页搜索")
++        detail = "检索式：" + clean(args.get("query"))
++    elif name == "crossref_lookup":
++        title, detail = "核对文献 · Crossref", "DOI：" + clean(args.get("doi"))
++    elif name == "europepmc_fulltext":
++        title, detail = "读取论文正文 · Europe PMC", clean(args.get("pmcid")) + " · 起始字符 " + clean(args.get("offset", 0))
++    elif name in {"web_extract", "browser_navigate"}:
++        title = "提取网页／PDF 内容" if name == "web_extract" else "浏览网页"
++        urls = args.get("urls", [args.get("url", "")])
++        detail = "；".join(filter(None, (safe_url(u) for u in urls[:5]))) if isinstance(urls, list) else ""
++    elif name in {"skill_view", "skill_manage", "skills_list", "tool_describe", "tool_search"}:
++        title = {"skill_view": "加载研究方法", "skill_manage": "管理研究方法", "skills_list": "查看研究方法", "tool_describe": "查看工具用法", "tool_search": "查找工具"}[name]
++        names = args.get("names", args.get("name", args.get("query", "")))
++        detail = clean(", ".join(names) if isinstance(names, list) and all(isinstance(x, str) for x in names) else names)
++    elif name in {"read_file", "write_file", "patch"}:
++        title = {"read_file": "读取文件", "write_file": "写入文件", "patch": "修改文件"}[name]
++        detail = clean(str(args.get("path", "")).replace("\\", "/").rsplit("/", 1)[-1])
++    elif name == "terminal":
++        title = "执行终端命令"
++        # Program only: shell arguments/output can contain user secrets.
++        match = re.match(r"\s*([a-zA-Z][\w.-]{0,40})(?:\s|$)", str(args.get("command", "")))
++        detail = "程序：" + match[1] if match else "命令已提交"
++    elif name.startswith("browser_"):
++        title = "浏览器操作 · " + {"browser_snapshot": "读取页面", "browser_click": "点击元素", "browser_scroll": "滚动页面", "browser_type": "填写页面", "browser_back": "返回页面"}.get(name, clean(name))
++    elif name in {"delegate_task", "todo"}:
++        title = "分派研究子任务" if name == "delegate_task" else "更新任务计划"
++    return {"title": title, "detail": detail, "state": "running", "source": source}
++
++
++def finish_activity(activity, tool, result, elapsed):
++    out = {**activity, "state": "completed", "elapsed": round(max(0, elapsed), 1), "summary": "执行结束", "items": []}
++    data = decode(result)
++    if data.get("error") or data.get("exit_code") not in (None, 0):
++        return {**out, "state": "failed", "summary": "工具返回错误，未取得有效结果"}
++    records = data.get("records")
++    if isinstance(data.get("record"), dict):
++        records = [data["record"]]
++    if tool == "web_search":
++        records = data.get("data", {}).get("web") if isinstance(data.get("data"), dict) else None
++    if isinstance(records, list):
++        out["summary"] = f"返回 {len(records)} 条结果" + ("（未命中）" if not records else "")
++        out["items"] = [{"title": clean(r.get("title")), "url": safe_url(r.get("url", "")),
++                         "note": " · ".join(filter(None, [clean(r.get("year")), clean(r.get("doi")),
++                             {"metadata": "题录", "abstract": "含摘要"}.get(r.get("evidence_level"), "网页结果")]))}
++                        for r in records[:10] if isinstance(r, dict)]
++        if len(records) > 10:
++            out["summary"] += " · 展示前 10 条"
++    elif data.get("evidence_level") == "fulltext_excerpt" and isinstance(data.get("text"), str):
++        chars = len(data["text"])
++        out["summary"] = f"已读取正文 {chars} 字符 · 起始 {clean(data.get('offset', 0))} · 正文共 {clean(data.get('total_chars'))} 字符"
++        out["items"] = [{"title": clean(data.get("pmcid")), "url": safe_url(data.get("url", "")), "note": "正文节选；不代表已阅读整篇论文、图表及补充材料"}]
++    elif tool == "web_extract" and isinstance(data.get("results"), list):
++        rows = data["results"]
++        good = 0
++        for row in rows[:10]:
++            content = row.get("content") or row.get("raw_content") or ""
++            valid = not row.get("error") and isinstance(content, str) and bool(content)
++            good += int(valid)
++            out["items"].append({"title": clean(row.get("title")) or safe_url(row.get("url", "")),
++                                 "url": safe_url(row.get("url", "")),
++                                 "note": f"已提取 {len(content)} 字符（工具返回内容，可能截断）" if valid else "读取失败／无可读内容"})
++        out["summary"] = f"读取 {good}/{len(rows)} 个页面；网页提取不等同于已取得论文全文"
++        if good != len(rows):
++            out["state"] = "partial" if good else "failed"
++    elif not data:
++        out["summary"] = "调用已返回；此工具未提供可展示的结构化结果"
++    return out
++
++
++class ActivityTracker:
++    def __init__(self):
++        self.calls = {}
++
++    def start(self, call_id, tool, args):
++        activity = start_activity(tool, args)
++        self.calls[call_id] = (activity, time.monotonic())
++        return {"tool": tool, "toolCallId": call_id, "status": "running", "activity": activity}
++
++    def complete(self, call_id, tool, result):
++        activity, started = self.calls.pop(call_id)
++        receipt = finish_activity(activity, tool, result, time.monotonic() - started)
++        return {"tool": tool, "toolCallId": call_id, "status": "completed", "activity": receipt}
+--- /dev/null
 +++ b/gateway/workstation_catalog.json
 @@ -0,0 +1,21 @@
 +{
 +  "checked_at": "2026-09-08",
++  "retired_models": ["ws-deepseek-v4-flash-vision-exp"],
 +  "providers": {
 +    "qwen": {"name":"Qwen · 阿里云百炼","key_url":"https://bailian.console.aliyun.com/","docs_url":"https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope","endpoints":[{"id":"cn","name":"中国大陆（北京）","url":"https://dashscope.aliyuncs.com/compatible-mode/v1"},{"id":"intl","name":"国际（新加坡）","url":"https://dashscope-intl.aliyuncs.com/compatible-mode/v1"}]},
 +    "kimi": {"name":"Kimi · 月之暗面","key_url":"https://platform.kimi.com/","docs_url":"https://platform.kimi.com/docs/models","endpoints":[{"id":"cn","name":"中国大陆","url":"https://api.moonshot.cn/v1"},{"id":"intl","name":"国际","url":"https://api.moonshot.ai/v1"}]},
@@ -73,10 +224,9 @@
 +    {"id":"ws-qwen3.8-max","name":"Qwen3.8 Max","provider":"qwen","upstream_id":"qwen3.8-max","vision":true,"description":"旗舰通用模型 · 科研分析、代码与图像理解"},
 +    {"id":"ws-qwen3.8-flash","name":"Qwen3.8 Flash","provider":"qwen","upstream_id":"qwen3.8-flash","vision":true,"description":"快速通用模型 · 高频问答与资料整理"},
 +    {"id":"ws-kimi-k3","name":"Kimi K3","provider":"kimi","upstream_id":"kimi-k3","vision":true,"description":"旗舰长上下文模型 · 知识工作与深度推理"},
-+    {"id":"ws-kimi-k2.7-code","name":"Kimi K2.7 Code","provider":"kimi","upstream_id":"kimi-k2.7-code","vision":true,"description":"编程模型 · 实验代码与长程开发任务"},
++    {"id":"ws-kimi-k2.7-code","name":"Kimi K2.7","provider":"kimi","upstream_id":"kimi-k2.7-code","vision":true,"description":"多模态模型 · 代码、推理与科研任务"},
 +    {"id":"ws-deepseek-v4-pro","name":"DeepSeek V4 Pro","provider":"deepseek","upstream_id":"deepseek-v4-pro","vision":false,"description":"旗舰推理模型 · 复杂分析与科研写作"},
 +    {"id":"ws-deepseek-v4-flash","name":"DeepSeek V4 Flash","provider":"deepseek","upstream_id":"deepseek-v4-flash","vision":false,"description":"快速文本模型 · 日常科研任务"},
-+    {"id":"ws-deepseek-v4-flash-vision-exp","name":"DeepSeek V4 Flash Vision · 实验版","provider":"deepseek","upstream_id":"deepseek-v4-flash-vision-exp","vision":true,"description":"实验性视觉模型 · 图像与截图理解"},
 +    {"id":"ws-glm-5.3","name":"GLM-5.3","provider":"glm","upstream_id":"glm-5.3","vision":false,"description":"旗舰模型 · 编程与长程任务"},
 +    {"id":"ws-glm-5.3-flash","name":"GLM-5.3 Flash","provider":"glm","upstream_id":"glm-5.3-flash","vision":true,"description":"快速多模态模型 · 文本与图像任务"},
 +    {"id":"ws-glm-5.2","name":"GLM-5.2","provider":"glm","upstream_id":"glm-5.2","vision":false,"description":"长上下文推理模型 · 大篇幅资料分析"}
@@ -108,6 +258,54 @@
          completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
          model_name = body.get("model", self._model_name)
          created = int(time.time())
+@@ -500,29 +508,30 @@
+             # tool_call_ids with an emitted "running": a "completed" without one (internal/
+             # filtered tools) is dropped rather than orphaned on the wire.
+             _started_tool_call_ids: set[str] = set()
++            from gateway.workstation_activity import ActivityTracker
++            _activity = ActivityTracker()
+ 
+             def _on_tool_start(tool_call_id, function_name, function_args):
+                 """``hermes.tool.progress`` status=running; ``_``-prefixed tools stay off the wire."""
+                 if not tool_call_id or function_name.startswith("_"):
+                     return
+                 _started_tool_call_ids.add(tool_call_id)
+-                from agent.display import build_tool_preview, get_tool_emoji
+-                label = build_tool_preview(function_name, function_args) or function_name
+-                _stream_q.put_threadsafe(("__tool_progress__", {
+-                    "tool": function_name, "emoji": get_tool_emoji(function_name), "label": label,
+-                    "toolCallId": tool_call_id, "status": "running"}))
++                _stream_q.put_threadsafe(("__tool_progress__",
++                    _activity.start(tool_call_id, function_name, function_args)))
+ 
+             def _on_tool_complete(tool_call_id, function_name, function_args, function_result):
+                 if not tool_call_id or tool_call_id not in _started_tool_call_ids:
+                     return
+                 _started_tool_call_ids.discard(tool_call_id)
+-                _stream_q.put_threadsafe(("__tool_progress__", {
+-                    "tool": function_name, "toolCallId": tool_call_id, "status": "completed"}))
++                _stream_q.put_threadsafe(("__tool_progress__",
++                    _activity.complete(tool_call_id, function_name, function_result)))
+ 
+             # tool_progress_callback deliberately NOT wired: it would duplicate the structured
+             # start/complete callbacks (which carry the tool_call id).
+             agent_task, agent_ref = self._spawn_stream_agent(
+-                _stream_q, tool_start_callback=_on_tool_start,
++                _stream_q,
++                reasoning_callback=lambda text: _stream_q.put_threadsafe(("__reasoning_delta__", text)) if text else None,
++                tool_start_callback=_on_tool_start,
+                 tool_complete_callback=_on_tool_complete, **run_kwargs)
+             return await self._write_sse_chat_completion(
+                 request, completion_id, model_name, created, _stream_q,
+@@ -632,6 +641,8 @@
+                 if isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__tool_progress__":
+                     # Custom event: tool lifecycle for frontends without markers in history.
+                     await response.write(_sse_frame(delta[1], event="hermes.tool.progress"))
++                elif isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__reasoning_delta__":
++                    await response.write(_sse_frame(_chunk({"reasoning_content": delta[1]})))
+                 else:
+                     await response.write(_sse_frame(_chunk({"content": delta})))
+             # The agent can fail after the queue drains (task raises / result flagged failed or
 --- a/gateway/platforms/api_server.py
 +++ b/gateway/platforms/api_server.py
 @@ -2037,6 +2037,10 @@
@@ -121,6 +319,15 @@
          request_model = _clean_request_string(requested_model)
          request_provider = _clean_request_string(requested_provider)
          route_cfg = route if isinstance(route, dict) else {}
+@@ -2105,7 +2109,7 @@
+         model_options: Optional[Dict[str, Any]] = None, route: Optional[Dict[str, Any]] = None,
+         session_model: Optional[str] = None, confirmed_runtime_lock: bool = False,
+         room_dispatch: Optional[Dict[str, Any]] = None,
+-        room_execution_policy: Optional[Dict[str, Any]] = None) -> Any:
++        room_execution_policy: Optional[Dict[str, Any]] = None, reasoning_callback=None) -> Any:
+         """Create an AIAgent from the gateway runtime config + platform toolsets.
+         ``gateway_session_key`` persists across transcripts (memory scope), unlike ``session_id``;
+         ``route`` / ``session_model`` are mutually exclusive; ``confirmed_runtime_lock`` beats the
 @@ -2118,7 +2122,7 @@
          # RuntimeError is caught ONLY here (sole provider-auth raiser); the typed subclass keeps
          # run_conversation() errors distinct.
@@ -130,7 +337,13 @@
          except RuntimeError as exc:
              raise _ProviderAuthResolutionError(str(exc)) from exc
          # A fallback-provider runtime carries its own ``model``: pop it (overrides config, and
-@@ -2155,7 +2159,7 @@
+@@ -2150,12 +2154,13 @@
+             "enabled_toolsets": enabled_toolsets, "session_id": session_id,
+             "platform": "api_server",
+             "stream_delta_callback": stream_delta_callback,
++            "reasoning_callback": reasoning_callback,
+             "tool_progress_callback": tool_progress_callback,
+             "tool_start_callback": tool_start_callback,
              "tool_complete_callback": tool_complete_callback,
              "session_db": self._ensure_session_db(),
              # Same fallback provider chain as Telegram/Discord/Slack.
@@ -139,3 +352,22 @@
              "reasoning_config": request_reasoning_config,
              "gateway_session_key": gateway_session_key}
          if request_service_tier is not _REQUEST_OPTION_MISSING:
+@@ -3629,7 +3634,7 @@
+         requested_provider: Optional[str] = None, model_options: Optional[Dict[str, Any]] = None,
+         route: Optional[Dict[str, Any]] = None, session_model: Optional[str] = None,
+         requested_runtime: Optional[Dict[str, Any]] = None, route_source: str = "global",
+-        confirmed_runtime_lock: bool = False, bind_declared_conversation: bool = False) -> tuple:
++        confirmed_runtime_lock: bool = False, bind_declared_conversation: bool = False, reasoning_callback=None) -> tuple:
+         """Create an agent and run one turn in a thread executor -> ``(result, usage)``.
+         ``agent_ref[0]`` receives the agent so SSE writers can interrupt it; ``active_run_id``
+         registers it in ``_active_run_agents``. Under a confirmed model lock the actual
+@@ -3652,7 +3657,8 @@
+                 try:
+                     agent = self._create_agent(
+                         ephemeral_system_prompt=ephemeral_system_prompt, session_id=session_id,
+-                        stream_delta_callback=stream_delta_callback, tool_progress_callback=tool_progress_callback,
++                        stream_delta_callback=stream_delta_callback, reasoning_callback=reasoning_callback,
++                        tool_progress_callback=tool_progress_callback,
+                         tool_start_callback=tool_start_callback, tool_complete_callback=tool_complete_callback,
+                         gateway_session_key=gateway_session_key, requested_model=requested_model,
+                         requested_provider=requested_provider, model_options=model_options, route=route,
