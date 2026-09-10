@@ -1,0 +1,9 @@
+name: research-frontier
+version: "0.1.0"
+description: Detect bibliometric hotspots, trends and candidate research gaps from retrieved literature records; reports methodology limits instead of judging research value.
+author: AcademicResearchAgent
+provides_tools:
+  - frontier_corpus_profile
+  - frontier_hotspot_analysis
+  - frontier_gap_analysis
+  - frontier_report_build

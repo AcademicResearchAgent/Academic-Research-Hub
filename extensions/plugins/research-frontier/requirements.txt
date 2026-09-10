@@ -1,0 +1,5 @@
+# research-frontier - bibliometric analysis dependencies.
+# Installed into the pinned Hermes runtime by deploy/hermes/deploy-extensions.py.
+# Keep unique to this plugin; do not rely on packages pulled in by other extensions.
+pandas>=2.2
+numpy>=1.26

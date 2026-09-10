@@ -1,6 +1,6 @@
 ---
 name: ars-deep-research
-description: 深度学术研究：基于 Academic Research Skills 方法论的 13 角色研究流程，覆盖全量研究、快速简报、文献综述、事实核查、系统综述（PRISMA）与苏格拉底式引导。涉及文献检索、跨库核验与证据分层。触发词：深度研究、文献综述、系统综述、事实核查、引导我的研究、research、literature review、systematic review、fact-check、guide my research。
+description: 深度学术研究：基于 Academic Research Skills 方法论的 13 角色研究流程，覆盖全量研究、快速简报、文献综述、事实核查、系统综述（PRISMA）与苏格拉底式引导。涉及文献检索、跨库核验、证据分层与研究空白/前沿探测。触发词：深度研究、文献综述、系统综述、事实核查、引导我的研究、研究空白、前沿趋势、research、literature review、systematic review、fact-check、guide my research、research gaps、research trends。
 ---
 
 # 深度学术研究（ars-deep-research）
@@ -27,7 +27,8 @@ description: 深度学术研究：基于 Academic Research Skills 方法论的 1
 3. 记录实际检索式、数据源与 `retrieved_at`，按 DOI 或题名去重；探索性检索不能宣称穷尽数据库或完成系统综述。
 4. 用 `evidence_level` 区分元数据、摘要与全文片段；`is_open_access` 只是来源标记，获取成功才算读到正文。
 5. 跨来源合成时，区分作者结论、自己的推断与待核实事项；引用条目交给 `research_citation` 仅做确定性排版（不核验、不代表正式格式）。
-6. 系统综述（PRISMA）模式必须按 PRISMA 2020 报告条目组织流程，暴露包含 / 排除数、筛选过程与偏倚风险，不把前几条结果当作系统综述。
+6. 需要判断趋势、热点或研究空白时，把已检索题录写成 JSONL（每行一个对象，至少含 `title`，建议带 `year`、`keywords`、`doi`），先用 `frontier_corpus_profile` 检视语料，再用 `frontier_hotspot_analysis` / `frontier_gap_analysis` 计算，最后用 `frontier_report_build` 汇总。低共现只是文献计量信号：必须写成“在当前语料中很少组合出现”，不得写成“该方向无人研究”。
+7. 系统综述（PRISMA）模式必须按 PRISMA 2020 报告条目组织流程，暴露包含 / 排除数、筛选过程与偏倚风险，不把前几条结果当作系统综述。
 
 ## 失败与边界
 

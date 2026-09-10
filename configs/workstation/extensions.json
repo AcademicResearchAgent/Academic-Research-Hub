@@ -16,17 +16,20 @@
     "npy3d-visualization",
     "pvdata-import",
     "pvdata-visualization",
-    "latex-paper"
+    "latex-paper",
+    "research-frontier"
   ],
   "skill_sources": {
     "npy3d-visualization": "mcp/cfd-npy3d/skills/npy3d_visualization",
     "pvdata-import": "mcp/cfd-npy3d/skills/pvdata_import",
     "pvdata-visualization": "mcp/cfd-npy3d/skills/pvdata_visualization",
-    "latex-paper": "plugins/latex-paper/skills/latex-paper"
+    "latex-paper": "plugins/latex-paper/skills/latex-paper",
+    "research-frontier": "plugins/research-frontier/skills/research-frontier"
   },
   "plugins": [
     "research-citations",
-    "latex-paper"
+    "latex-paper",
+    "research-frontier"
   ],
   "api_toolsets": [
     "skills",
@@ -34,7 +37,8 @@
     "research_papers",
     "cfd_npy3d",
     "ars_resolvers",
-    "latex_paper"
+    "latex_paper",
+    "research_frontier"
   ],
   "mcp_servers": {
     "cfd_npy3d": {

@@ -1,0 +1,36 @@
+{
+  "note": "Fallback term lists for frontier_gap_analysis. Always prefer caller-supplied domain_terms/method_terms for the actual topic; these are broad defaults only.",
+  "domain_terms": [
+    "crispr",
+    "gene editing",
+    "immunotherapy",
+    "oncology",
+    "neuroscience",
+    "protein folding",
+    "drug discovery",
+    "microbiome",
+    "metabolism",
+    "climate model",
+    "battery",
+    "perovskite",
+    "catalysis",
+    "epidemiology"
+  ],
+  "method_terms": [
+    "machine learning",
+    "deep learning",
+    "random forest",
+    "neural network",
+    "molecular dynamics",
+    "density functional theory",
+    "cryo-em",
+    "single-cell sequencing",
+    "clinical trial",
+    "meta-analysis",
+    "systematic review",
+    "mass spectrometry",
+    "pcr",
+    "simulation",
+    "high-throughput screening"
+  ]
+}

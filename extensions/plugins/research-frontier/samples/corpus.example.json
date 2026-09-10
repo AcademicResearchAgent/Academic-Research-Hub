@@ -1,0 +1,12 @@
+[
+  {"title": "CRISPR screening in cancer models", "year": 2019, "doi": "10.1000/ex.001", "keywords": ["crispr", "cancer", "screening"]},
+  {"title": "Machine learning for CRISPR off-target prediction", "year": 2019, "doi": "10.1000/ex.002", "keywords": ["machine learning", "crispr", "off-target"]},
+  {"title": "Deep learning methods in oncology imaging", "year": 2020, "doi": "10.1000/ex.003", "keywords": ["deep learning", "oncology", "imaging"]},
+  {"title": "CRISPR gene editing in human cells", "year": 2020, "doi": "10.1000/ex.004", "keywords": ["crispr", "gene editing"]},
+  {"title": "Machine learning biomarkers in oncology", "year": 2021, "doi": "10.1000/ex.005", "keywords": ["machine learning", "oncology", "biomarker"]},
+  {"title": "CRISPR delivery systems for therapeutics", "year": 2021, "doi": "10.1000/ex.006", "keywords": ["crispr", "delivery"]},
+  {"title": "Deep learning for protein folding prediction", "year": 2022, "doi": "10.1000/ex.007", "keywords": ["deep learning", "protein folding"]},
+  {"title": "CRISPR clinical trials and safety", "year": 2022, "doi": "10.1000/ex.008", "keywords": ["crispr", "clinical trial", "safety"]},
+  {"title": "Machine learning approaches to protein folding", "year": 2023, "doi": "10.1000/ex.009", "keywords": ["machine learning", "protein folding"]},
+  {"title": "Machine learning guided CRISPR design", "year": 2024, "doi": "10.1000/ex.010", "keywords": ["machine learning", "crispr", "design"]}
+]
