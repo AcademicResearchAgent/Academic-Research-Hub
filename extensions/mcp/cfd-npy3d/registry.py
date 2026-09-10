@@ -15,7 +15,7 @@ import json
 import os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-WORKSPACE = os.path.abspath(os.path.join(BASE, ".."))     # g:/mcp-
+WORKSPACE = os.path.abspath(os.path.join(BASE, ".."))
 OUT_ROOT = os.environ.get("NPY3D_OUT_ROOT") or os.path.join(WORKSPACE, "output")
 
 MANIFEST_PATH = os.path.join(BASE, "manifest.json")
@@ -109,7 +109,6 @@ def validate_registry() -> list[str]:
     for s in m.get("skills", []):
         if not os.path.isfile(os.path.join(BASE, s, "SKILL.md")):
             errs.append("技能 %s 缺失 SKILL.md" % s)
-    # 去重保序
     seen, uniq = set(), []
     for e in errs:
         if e not in seen:

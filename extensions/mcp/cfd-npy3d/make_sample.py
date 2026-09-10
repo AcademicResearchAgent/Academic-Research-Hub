@@ -10,16 +10,16 @@
 import os
 import numpy as np
 
-T = 48        # 时间帧
-C = 5         # 通道数（与真实数据一致）
-W = 201       # 列：流向 x
-H = 81        # 行：横向 y
+T = 48
+C = 5
+W = 201
+H = 81
 
 
 def _gen_grid():
-    x = np.linspace(-4.0, 4.0, W)       # 流向
-    y = np.linspace(-2.0, 2.0, H)       # 横向
-    return np.meshgrid(x, y, indexing="xy")   # (H, W)
+    x = np.linspace(-4.0, 4.0, W)
+    y = np.linspace(-2.0, 2.0, H)
+    return np.meshgrid(x, y, indexing="xy")
 
 
 def _vortex(u, v, x, y, xc, yc, gam, sig):
@@ -27,7 +27,6 @@ def _vortex(u, v, x, y, xc, yc, gam, sig):
     dy = y - yc
     r2 = dx * dx + dy * dy
     f = gam / (2 * np.pi) * np.exp(-r2 / (2 * sig * sig))
-    # 高斯涡核诱导速度 (切向)
     u += f * (-dy) / (r2 + 1e-12)
     v += f * (dx) / (r2 + 1e-12)
     return u, v
@@ -36,21 +35,19 @@ def _vortex(u, v, x, y, xc, yc, gam, sig):
 def gen_sample():
     """返回 dict(x=X3, y=Y3, q=Q) —— 与 npy 文件同构的数组。"""
     X2, Y2 = _gen_grid()
-    x = X2[0, :]                      # 流向坐标向量
-    y = Y2[:, 0]                      # 横向坐标向量
-    # 圆柱几何（平滑内部遮蔽，不用 NaN 以保证动画/曲面都稳定可画）
+    x = X2[0, :]
+    y = Y2[:, 0]
     r = np.sqrt((X2 - 0.0) ** 2 + (Y2 - 0.0) ** 2)
     Rc = 0.5
-    inside = np.clip((Rc - r) / 0.08, 0.0, 1.0)   # 0=圆柱内, 1=外
+    inside = np.clip((Rc - r) / 0.08, 0.0, 1.0)
 
     U = np.zeros((T, C, H, W))
     X3 = np.empty((T, H, W), dtype=np.float64)
     Y3 = np.empty((T, H, W), dtype=np.float64)
     for t in range(T):
-        # 背景来流 + 卡门涡街（向下游漂移、上下两列交替旋转）
         u = np.full((H, W), 1.0)
         v = np.zeros((H, W))
-        s = 0.6 * t / T * 2.0                      # 涡列向下游漂移量
+        s = 0.6 * t / T * 2.0
         sig = 0.30
         n = 8
         for k in range(n):
@@ -58,16 +55,14 @@ def gen_sample():
             gam = (-1) ** k * 0.9
             u, v = _vortex(u, v, X2, Y2, xc, 0.55, gam, sig)
             u, v = _vortex(u, v, X2, Y2, xc, -0.55, -gam, sig)
-        # 圆柱绕流：圆柱附近抑制横向速度、返回流
         u *= inside
         v *= inside
-        # 通道合成（与真实数据“都接近 1、个别通道带负号”同特征）
-        w = (v > 0.02).astype(float) - (v < -0.02).astype(float)   # 涡街符号带
-        U[t, 0] = 1.0 + 0.10 * w * np.exp(-(r - 1.0) ** 2 / 0.8)    # rho
-        U[t, 1] = u                                                 # u
-        U[t, 2] = v * 1.5                                           # v(带负号)
-        U[t, 3] = 1.0 - 0.30 * np.exp(-r * r / (2 * Rc * Rc)) + 0.05 * w  # p(圆柱低压)
-        U[t, 4] = 1.0 + 0.15 * np.exp(-(r - 1.6) ** 2 / 1.2) * (0.5 + 0.5 * np.cos(2 * np.pi * t / T))  # T
+        w = (v > 0.02).astype(float) - (v < -0.02).astype(float)
+        U[t, 0] = 1.0 + 0.10 * w * np.exp(-(r - 1.0) ** 2 / 0.8)
+        U[t, 1] = u
+        U[t, 2] = v * 1.5
+        U[t, 3] = 1.0 - 0.30 * np.exp(-r * r / (2 * Rc * Rc)) + 0.05 * w
+        U[t, 4] = 1.0 + 0.15 * np.exp(-(r - 1.6) ** 2 / 1.2) * (0.5 + 0.5 * np.cos(2 * np.pi * t / T))
         U[t, 0] = U[t, 0] * (0.7 + 0.6 * inside)
         X3[t] = X2
         Y3[t] = Y2
@@ -93,7 +88,7 @@ def _plane2d_vtk(out_dir=None):
         for i in range(nx):
             x = x0 + i * dx
             r = (x * x + y * y) ** 0.5
-            inside = 1.0 if r < 0.5 else 0.0          # 圆柱遮挡示意
+            inside = 1.0 if r < 0.5 else 0.0
             vals.append("%.4f" % (1.0 + 0.2 * (1 - inside)
                                   * (x + 2.0) / 4.0 * (0.5 + 0.5 * (y + 1.0))))
         rows.append(" ".join(vals))

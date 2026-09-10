@@ -21,7 +21,6 @@ import os
 import re
 import sys
 
-# 允许以任意 cwd 运行本脚本
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import registry                       # noqa: E402
@@ -60,7 +59,6 @@ def _check_signature(spec, fn, lines: list[str]) -> None:
     src = spec["_source"]
     params = inspect.signature(fn).parameters
     spec_args = {a["name"]: a for a in spec.get("arguments", [])}
-    # 集合一致
     fn_names = {n for n, p in params.items()
                 if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)}
     if set(spec_args) != fn_names:
@@ -90,7 +88,6 @@ def _check_signature(spec, fn, lines: list[str]) -> None:
 def run() -> tuple[bool, list[str]]:
     """执行全部一致性检查；返回 (是否通过, 明细行)。"""
     lines: list[str] = []
-    # 1) 契约文件自身合法
     errs = registry.validate_registry()
     for e in errs:
         lines.append("CHECK FAIL: " + e)
@@ -99,7 +96,6 @@ def run() -> tuple[bool, list[str]]:
     lines.append("registry: manifest 声明 %d 工具、%d 技能"
                  % (len(registry.tool_names()), len(registry.skill_dirs())))
 
-    # 2) manifest <-> handlers 双向一致
     import handlers
     missing = [n for n in registry.tool_names() if n not in handlers.HANDLERS]
     orphan = [n for n in handlers.HANDLERS if n not in registry.tool_names()]
@@ -108,17 +104,14 @@ def run() -> tuple[bool, list[str]]:
     for n in orphan:
         lines.append("CHECK FAIL: handlers 实现 %s 但 manifest 未声明" % n)
 
-    # 3) 参数契约 <-> 签名
     for spec in registry.tool_specs():
         fn = handlers.HANDLERS.get(spec["name"])
         if fn is not None:
             _check_signature(spec, fn, lines)
 
-    # 4) 技能 frontmatter
     for d, text in _skill_texts():
         _check_frontmatter(d, text, lines)
 
-    # 5) 每个工具至少在一个技能文档中被提及
     texts = [t for _, t in _skill_texts()]
     for name in registry.tool_names():
         if not any(name in t for t in texts):
