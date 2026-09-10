@@ -67,17 +67,17 @@ def _find_npy(data_dir: str, tokens: tuple) -> dict:
 @dataclass
 class NpyDataset:
     data_dir: str
-    files: dict                 # role -> path
-    X: np.ndarray               # (H,W) 一帧坐标（已拷贝）
+    files: dict
+    X: np.ndarray
     Y: np.ndarray
     Q_path: str
-    shape: tuple                # Q 原始 shape
+    shape: tuple
     dtype: np.dtype
     T: int
     C: int
     H: int
     W: int
-    x_axis: int                 # 流向/列方向的网格轴（0=axis1 行,1=axis2 列）
+    x_axis: int
 
     @property
     def npts(self) -> int:
@@ -102,7 +102,7 @@ class NpyDataset:
             else:
                 raise ValueError("无法解释的 Q 维度 %s" % (q.shape,))
         finally:
-            pass  # mmap 句柄随数组 GC 释放
+            pass
         return np.array(a, dtype=np.float64, copy=True)
 
     def frame_stats(self, t: int) -> list:
@@ -167,7 +167,6 @@ def open_dataset(data_dir: str,
         H, W = xa.shape
         X, Y = np.array(xa, copy=True), np.array(ya, copy=True)
     elif xa.ndim == 3:
-        # 坐标沿首轴重复（时间帧）——只取最后一帧即可
         X = np.array(xa[-1], copy=True)
         Y = np.array(ya[-1], copy=True)
         H, W = X.shape
@@ -184,9 +183,9 @@ def open_dataset(data_dir: str,
         if q.shape[1:] != (H, W):
             raise ValueError("Q shape %s 与网格 %dx%d 不匹配" % (q.shape, H, W))
         if xa.ndim == 3:
-            T, C = q.shape[0], 1      # X/Y 带时间轴 -> Q 为 (T,H,W) 单通道
+            T, C = q.shape[0], 1
         else:
-            T, C = 1, q.shape[0]      # X/Y 为静态网格 -> Q 解释为 (C,H,W) 多通道单帧
+            T, C = 1, q.shape[0]
 
     elif q.ndim == 2:
         if q.shape != (H, W):
@@ -211,7 +210,6 @@ def _surface_from(ax, x, y, z):
                                antialiased=True, rstride=1, cstride=1)
     xx, yy = x[~m.mask], y[~m.mask]
     zz = z[~m.mask]
-    # 三角化有空洞表面（对大数据可降低分辨率）
     stride = max(1, int(np.sqrt(z.size / 30000)))
     idx = (slice(None, None, stride), slice(None, None, stride))
     m2 = np.ma.masked_invalid(z[idx])
@@ -234,7 +232,6 @@ def render_surface(ds: NpyDataset, frame: int = 0, channels="0",
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    # 通道选择解析
     chs = _parse_channels(channels, ds.C)
     if frame < 0 or frame >= ds.T:
         raise ValueError("frame=%d 超出范围 [0, %d)" % (frame, ds.T))
@@ -263,7 +260,6 @@ def render_surface(ds: NpyDataset, frame: int = 0, channels="0",
         cb.ax.tick_params(labelsize=7)
         axes.append(ax)
     if show_2d and n == 1:
-        # 附加 2D 俯视对照（点云着色，天然支持非结构化/贴体网格）
         ax2 = fig.add_subplot(spec[0, -1])
         z = ds.load_q_frame(frame, chs[0])
         m = np.isfinite(z)
@@ -325,7 +321,6 @@ def render_animation(ds: NpyDataset, channel: int = 0, case: str | None = None,
     if not (0 <= channel < ds.C):
         raise ValueError("channel=%d 越界（C=%d）" % (channel, ds.C))
     idx = np.unique(np.linspace(0, ds.T - 1, min(max_frames, ds.T)).astype(int))
-    # 预扫：抽样帧必须无 NaN（有 NaN 的通道动画不可靠，给出明确报错）
     bad = []
     for t in idx:
         if np.isnan(ds.load_q_frame(int(t), channel)).any():
@@ -501,4 +496,4 @@ def render_point_cloud_animation(frames, array_name, out_root, case=None,
                (path, array_name, len(frames), vmin, vmax))
 
 
-SAMPLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data")
+SAMPLE_DIR = os.environ.get("NPY3D_SAMPLE_DIR") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data")

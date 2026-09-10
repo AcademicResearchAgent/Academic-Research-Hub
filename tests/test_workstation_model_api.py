@@ -31,6 +31,8 @@ class ModelAPI(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory(dir=ROOT/'.build/tests')
         api._store=api.CredentialStore(Path(self.tmp.name)/'credentials.db','test-secret')
         api._attempts.clear()
+        api._probe_attempts.clear()
+        api.availability=api.AvailabilityChecks()
         self.app=FastAPI();self.app.include_router(api.router,prefix='/api/workstation')
         self.client=TestClient(self.app,base_url='https://workstation.test')
         self.key={'model_id':'ws-deepseek-v4-flash','endpoint_id':'official','api_key':'test-private-secret'}
@@ -57,6 +59,40 @@ class ModelAPI(unittest.TestCase):
         self.assertEqual(response.status_code,400)
         self.assertEqual(api.store().get('alice','deepseek')['key'],'previous-valid-secret')
         self.assertNotIn(self.key['api_key'],response.text)
+    def test_model_states_are_specific_cached_and_expire(self):
+        path='/api/workstation/models/ws-deepseek-v4-pro/check'
+        self.assertEqual(self.client.post(path).json()['state'],'unconfigured')
+        api.store().put('alice','deepseek','official','first-test-secret','ws-deepseek-v4-flash')
+        with patch.object(api,'validate',AsyncMock(side_effect=HTTPException(400,'此模型无权限'))) as validate:
+            self.assertEqual(self.client.post(path).json()['state'],'unavailable')
+            self.assertEqual(self.client.post(path).json()['state'],'unavailable')
+            validate.assert_awaited_once()
+        catalog=self.client.get('/api/workstation/catalog').json()
+        self.assertEqual(catalog['availability']['ws-deepseek-v4-flash']['state'],'checking')
+        for value in api.availability.results.values():value['checked_at']-=61
+        with patch.object(api,'validate',AsyncMock()) as validate:
+            self.assertEqual(self.client.post(path).json()['state'],'available')
+            self.assertEqual(self.client.post(path.replace('/check','/activate')).status_code,200)
+            validate.assert_awaited_once()
+        self.app.dependency_overrides[auth]=lambda:types.SimpleNamespace(id='bob')
+        self.assertEqual(self.client.post(path).json()['state'],'unconfigured')
+    def test_replacing_and_deleting_key_invalidates_model_status(self):
+        path='/api/workstation/models/ws-deepseek-v4-pro/check'
+        with patch.object(api,'validate',AsyncMock()) as validate:
+            self.client.post('/api/workstation/credentials',json=self.key)
+            self.assertEqual(self.client.post(path).json()['state'],'available')
+            self.client.post('/api/workstation/credentials',json={**self.key,'api_key':'replacement-secret'})
+            self.assertEqual(self.client.get('/api/workstation/catalog').json()['availability']['ws-deepseek-v4-pro']['state'],'checking')
+            self.assertEqual(self.client.post(path).json()['state'],'available')
+            self.assertEqual(validate.await_count,4)
+            self.client.delete('/api/workstation/credentials/deepseek')
+            self.assertEqual(self.client.post(path).json()['state'],'unconfigured')
+    def test_probe_transport_failure_is_not_reported_as_available(self):
+        api.store().put('alice','deepseek','official','test-private-secret','ws-deepseek-v4-flash')
+        with patch.object(api,'validate',AsyncMock(side_effect=HTTPException(502,'连接厂商超时或失败'))):
+            result=self.client.post('/api/workstation/models/ws-deepseek-v4-flash/check')
+            self.assertEqual(result.json()['state'],'unavailable')
+            self.assertEqual(self.client.post('/api/workstation/models/ws-deepseek-v4-flash/activate').status_code,409)
     def test_malformed_inputs_do_not_echo_key(self):
         for changes in ({'endpoint_id':'https://attacker.invalid'}, {'model_id':'other'}, {'api_key':{'secret':'sensitive-input'}}):
             response=self.client.post('/api/workstation/credentials',json={**self.key,**changes})

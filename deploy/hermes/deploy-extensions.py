@@ -34,6 +34,8 @@ def merge_config(config, extension, root, release):
             entry["command"] = expand(entry["command"])
         if "args" in entry:
             entry["args"] = [expand(value) for value in entry["args"]]
+        if "env" in entry:
+            entry["env"] = {key: expand(value) for key, value in entry["env"].items()}
         servers[name] = entry
     plugins = config.setdefault("plugins", {})
     plugins["enabled"] = sorted(set(plugins.get("enabled") or []) | set(extension["plugins"]))
@@ -58,6 +60,53 @@ def health():
             pass
         time.sleep(2)
     raise RuntimeError("Hermes API did not become healthy")
+
+
+def apply_skill_policy(config, extension, installed_names):
+    """Reconcile this dedicated workstation profile using native skills.disabled.
+
+    Track our previous exclusions so expanding the selection re-enables skills,
+    while preserving independently configured exclusions and other settings.
+    """
+    if "skill_policy" not in extension:
+        return config
+    config = json.loads(json.dumps(config))
+    allowed = set(extension["skills"]) | set(extension["skill_policy"]["include_upstream"])
+    allowed.add("hermes-agent")  # Essential operating manual in the pinned runtime.
+    skills = config.setdefault("skills", {})
+    previous = set(skills.get("workstation_managed_disabled", []))
+    managed = set(installed_names) - allowed
+    skills["disabled"] = sorted((set(skills.get("disabled", [])) - previous) | managed)
+    skills["workstation_managed_disabled"] = sorted(managed)
+    return config
+
+
+def reconcile_skill_policy(root, extension):
+    """Use runtime discovery (including plugin-qualified names), without an LLM."""
+    if "skill_policy" not in extension:
+        return
+    code = """
+import json
+from tools.skills_tool import _find_all_skills
+from hermes_cli.plugins import discover_plugins, get_plugin_manager
+discover_plugins()
+names = {s['name'] for s in _find_all_skills(skip_disabled=True)}
+names.update(s['name'] for s in get_plugin_manager().list_plugin_skill_metadata())
+print(json.dumps(sorted(names)))
+"""
+    env = {**os.environ, "HERMES_HOME": str(root / "state"), "PYTHONPATH": str(root / "source")}
+    result = run(sys.executable, "-c", code, cwd=root / "source", env=env,
+                 capture_output=True, text=True)
+    names = json.loads(result.stdout)
+    target = root / "state/config.yaml"
+    config = yaml.safe_load(target.read_text()) or {}
+    config = apply_skill_policy(config, extension, names)
+    temporary = target.with_suffix(".skills.tmp")
+    temporary.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False))
+    temporary.chmod(0o600)
+    os.replace(temporary, target)
+    print(json.dumps({"skill_inventory": len(names),
+                      "policy_excluded": len(config["skills"]["workstation_managed_disabled"])}))
 
 
 def rollback(root, backup):
@@ -141,13 +190,16 @@ def deploy(root, archive):
         for rel in paths:
             target = state / rel
             if target.exists():
-                target.rename(backup / ("previous-" + target.name))
+                previous = backup / "previous" / rel
+                previous.parent.mkdir(parents=True, exist_ok=True)
+                target.rename(previous)
             target.parent.mkdir(exist_ok=True)
             shutil.copytree(release / rel, target)
         temporary = state / "config.extensions.tmp"
         temporary.write_text(yaml.safe_dump(merged, allow_unicode=True, sort_keys=False))
         temporary.chmod(0o600)
         os.replace(temporary, state / "config.yaml")
+        reconcile_skill_policy(root, ext)
         env = {**os.environ, "HERMES_HOME": str(state), "PYTHONPATH": str(root / "source")}
         run(sys.executable, str(release / "verify-extensions.py"), "--root", str(root),
             cwd=root / "source", env=env)

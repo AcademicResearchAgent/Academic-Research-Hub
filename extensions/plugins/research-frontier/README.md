@@ -37,3 +37,8 @@ artifact paths; `frontier_report_build` additionally returns the full Markdown b
 Results are bibliometric proxies, not research-value judgements. See
 `references/metrics.md` and `references/limitations.md`; the bundled
 `skills/research-frontier/SKILL.md` tells the agent how to report them.
+
+In the workstation worker image, `RESEARCH_FRONTIER_WORKSPACE` is set to
+`/workspace/????`; outputs therefore participate in the current project file
+collection. The bundled skill is included in `skills` and `skill_sources` in the
+workstation registry so the research skill policy keeps it visible.

@@ -72,6 +72,18 @@ pvdata_render_animation(file_path="E:/sim/case.pvd", array_name="pressure", max_
 - 静态单时间步文件也能做“动画”，但帧间相同（先 inspect 确认时间步数）；
 - 每个时间步独立走一次 pvpython 导出，时间步多时耗时可观，建议限制 max_frames。
 
+## 失败与边界
+
+- 本机找不到 pvpython：工具明确报错，按查找顺序配置 `PARAVIEW_PVPYTHON` 或 `PARAVIEW_BIN` 后重试。
+- 扩展名无法识别：先 `pvdata_inspect` 看 reader 报错，必要时换用显式 reader 或先转换格式。
+- 指定的 `array_name` 不存在：**不报错**，会静默回退到自动选择（首个标量数组，无则首个数组）。
+  因此务必先 `pvdata_inspect` 核对数组名，并检查返回 md 中的 `array` 字段是否与预期一致。
+- `timestep_index` 越界：**不报错**，会被钳制到合法区间（<0 取 0，≥N 取最后一帧）；
+  返回 md 的 `timestep_index/timestep_count` 显示实际命中的帧。仅当数据集**完全没有时间步**却指定了非 0 索引时才报错。
+- `.pvd` 集合文件只能引用 XML 系子文件（`.vti/.vtu/.vtp` 等）；引用 legacy `.vtk` 会报
+  `Could not determine the data type`，需把子文件转成 `.vti` 等再引用。
+- 纯点表（如 CSV 点云）没有网格语义：只能点云着色，不要指望结构化曲面。
+
 ## 参考
 
 - 数据读取与导出协议：`references/pvdata_file_protocol.md`

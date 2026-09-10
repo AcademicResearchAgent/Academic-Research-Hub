@@ -1,12 +1,31 @@
 {
   "schema_version": 1,
+  "skill_policy": {
+    "include_upstream": [
+      "arxiv", "grounded-citations", "blocked-page-recovery",
+      "pdf", "docx", "xlsx", "powerpoint",
+      "github", "python-debugpy", "systematic-debugging"
+    ]
+  },
   "skills": [
     "research-literature",
     "ars-deep-research",
     "ars-academic-paper",
     "ars-academic-paper-reviewer",
-    "ars-academic-pipeline"
+    "ars-academic-pipeline",
+    "npy3d-visualization",
+    "pvdata-import",
+    "pvdata-visualization",
+    "latex-paper",
+    "research-frontier"
   ],
+  "skill_sources": {
+    "npy3d-visualization": "mcp/cfd-npy3d/skills/npy3d_visualization",
+    "pvdata-import": "mcp/cfd-npy3d/skills/pvdata_import",
+    "pvdata-visualization": "mcp/cfd-npy3d/skills/pvdata_visualization",
+    "latex-paper": "plugins/latex-paper/skills/latex-paper",
+    "research-frontier": "plugins/research-frontier/skills/research-frontier"
+  },
   "plugins": [
     "research-citations",
     "latex-paper",
@@ -23,6 +42,7 @@
   ],
   "mcp_servers": {
     "cfd_npy3d": {
+      "env": {"NPY3D_OUT_ROOT": "{root}/workspace/artifacts/cfd", "NPY3D_SAMPLE_DIR": "{root}/workspace/examples/cfd", "MPLCONFIGDIR": "{root}/state/cache/matplotlib", "QT_QPA_PLATFORM": "offscreen"},
       "command": "{root}/venv/bin/python",
       "args": [
         "{release}/mcp/cfd-npy3d/server.py"

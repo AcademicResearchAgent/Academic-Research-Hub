@@ -65,20 +65,17 @@ def _selftest() -> int:
     import glob
     from checks import check_registry_consistency
     try:
-        # 0) 契约/实现/技能文档 一致性质量门
         ok, lines = check_registry_consistency.run()
         for ln in lines:
             print("check |", ln)
         assert ok, "registry consistency check failed"
         print("check ok")
 
-        # 6) 注册清单核对：按 manifest 实际注册数与名称
         specs = registry.tool_specs()
         print("registry tools=%d: %s"
               % (len(specs), ", ".join(s["name"] for s in specs)))
         assert len(specs) == len(handlers.HANDLERS)
 
-        # 1) 演示数据兜底生成
         sample = os.path.join(registry.BASE, "sample_data")
         if not glob.glob(os.path.join(sample, "*.npy")):
             import make_sample
@@ -87,7 +84,6 @@ def _selftest() -> int:
         print("inspect ... T=%d C=%d HxW=%dx%d" % (ds.T, ds.C, ds.H, ds.W))
         assert ds.T >= 2 and ds.C == 5
 
-        # 2) 曲面（单通道 + 多通道）
         r1 = handlers.npy3d_render_surface(frame=0, channels="0",
                                            case="cfd_npy3d_selftest")
         assert os.path.isfile(r1.split("`")[1]), r1[:120]
@@ -98,13 +94,11 @@ def _selftest() -> int:
         print("surface ok ->", os.path.basename(r1.split("`")[1]))
         print("surface(all) ok ->", os.path.basename(r2.split("`")[1]))
 
-        # 3) 动画 GIF
         r3 = handlers.npy3d_render_animation(channel=0, case="cfd_npy3d_selftest",
                                              max_frames=24, fps=6)
         assert os.path.isfile(r3.split("`")[1]), r3[:120]
         print("animation ok ->", os.path.basename(r3.split("`")[1]))
 
-        # 4) 真实数据兼容性（若存在）
         real = os.path.join(registry.WORKSPACE, "CFD_TEST")
         if os.path.isdir(real) and glob.glob(os.path.join(real, "*.npy")):
             dr = core.open_dataset(real)
@@ -114,7 +108,6 @@ def _selftest() -> int:
             assert os.path.isfile(rr.split("`")[1]), rr[:120]
             print("real surface ok ->", os.path.basename(rr.split("`")[1]))
 
-        # 5) ParaView 格式（pvpython 可用时，用自带 ex2 示例）
         import pvbridge
         if pvbridge.available():
             cands = []
@@ -144,7 +137,6 @@ def _selftest() -> int:
             else:
                 print("skip pvdata: no ex2 example found near pvpython")
 
-            # 5b) import2d E2E：2D 平面样本 -> X/Y/Q .npy -> npy3d 曲面消费
             import make_sample
             plane = make_sample._plane2d_vtk(sample)
             if os.path.isfile(plane):
@@ -191,7 +183,7 @@ def main() -> int:
         return _selftest()
     if "--check" in sys.argv:
         return _check()
-    mcp.run()                                          # stdio transport
+    mcp.run()
     return 0
 
 

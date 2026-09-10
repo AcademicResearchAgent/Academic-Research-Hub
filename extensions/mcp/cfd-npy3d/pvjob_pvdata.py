@@ -52,7 +52,7 @@ READERS = {
     ".vtk":  "LegacyVTKReader",
     ".stl":  "STLReader",
     ".ply":  "PLYReader",
-    ".obj":  "OBJReader",
+    ".obj":  "WavefrontOBJReader",
     ".csv":  "CSVReader",
     ".ex2":  "ExodusIIReader",
     ".exo":  "ExodusIIReader",
@@ -73,7 +73,6 @@ def make_producer(params):
     name = READERS.get(ext)
     if name:
         cls = getattr(pvs, name)
-        # PV >= 6: LegacyVTKReader/PVDReader 暴露 FileNames(列表) 而非 FileName
         for kwargs in ({"FileName": fp}, {"FileNames": [fp]}):
             try:
                 return cls(**kwargs)
@@ -179,7 +178,7 @@ def _leaf_points_values(leaf, array_name):
     pd = leaf.GetPointData()
     arr = pd.GetArray(array_name) if pd else None
     if arr is None:
-        return None, None, 0, False          # this leaf lacks the array
+        return None, None, 0, False
     comps = int(arr.GetNumberOfComponents())
     pts = None
     gp = getattr(leaf, "GetPoints", None)
@@ -265,7 +264,6 @@ def run_points(params):
     elif t_index != 0:
         raise RuntimeError("dataset has no timesteps (timestep_index ignored)")
 
-    # quick info for association resolution
     di = producer.GetDataInformation()
     point_arrays = _arr_list(di.GetPointDataInformation())
     cell_arrays = _arr_list(di.GetCellDataInformation())
@@ -273,7 +271,6 @@ def run_points(params):
         producer, params.get("array_name"),
         {"point_arrays": point_arrays, "cell_arrays": cell_arrays})
 
-    # cell arrays -> point arrays via the standard filter
     target = producer
     if assoc == "CELLS":
         try:
@@ -529,7 +526,6 @@ def run_import2d(params):
         producer, params.get("array_name"),
         {"point_arrays": point_arrays, "cell_arrays": cell_arrays})
 
-    # composite data -> single dataset; cell arrays -> point arrays
     target = producer
     d0 = sm.Fetch(producer)
     if d0 is not None and d0.IsA("vtkCompositeDataSet"):

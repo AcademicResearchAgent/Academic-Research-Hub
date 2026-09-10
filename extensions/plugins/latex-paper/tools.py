@@ -94,6 +94,16 @@ def _file_tree(root: Path) -> list[str]:
 
 def _project_root(project_id: str) -> Path:
     root = PROJECTS.get(project_id)
+    # Isolated runs restart the plugin process. A generated project in the
+    # mounted workspace remains usable in later threads/runs without a global
+    # in-memory registry. Only our own UUID project directories are accepted.
+    if root is None and os.environ.get("LATEX_PAPER_WORKSPACE"):
+        if not re.fullmatch(r"[0-9a-f]{32}", project_id):
+            raise ValueError("unknown project_id")
+        candidate = _workspace() / project_id
+        if (not candidate.is_symlink() and candidate.is_dir()
+                and (candidate / ".latex-paper.json").is_file()):
+            root = candidate
     if root is None or not root.is_dir(): raise ValueError("unknown project_id")
     return root
 

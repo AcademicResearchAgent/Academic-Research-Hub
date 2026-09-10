@@ -1,4 +1,4 @@
-"""Apply MainTask research copy through supported settings and the Hermes identity file."""
+"""Apply research-workstation copy through supported settings and the Hermes identity file."""
 import json
 import os
 from pathlib import Path
