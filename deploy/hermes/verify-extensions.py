@@ -134,8 +134,7 @@ def main(root):
                   "europepmc_pmcid": open_paper["pmcid"], "fulltext_chars": len(fulltext["text"]),
                   "skill_loaded": "research-literature", "skills_loaded": loaded_skills,
                   "citation_verified_by_plugin": citation["verified"]}
-                  "skill_loaded": "research-literature", "citation_verified_by_plugin": citation["verified"]}
-        report.update({'latex_template_inspected': True, 'cfd_rendered': True, 'ars_registered': True, 'skills_loaded': 9})
+        report.update({'latex_template_inspected': True, 'cfd_rendered': True, 'ars_registered': True, 'skills_loaded': 10})
         report['skill_scope'] = skill_scope
         (root / "extensions/verification.json").write_text(json.dumps(report, indent=2))
         print(json.dumps(report))
