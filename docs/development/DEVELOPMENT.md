@@ -9,7 +9,7 @@ python scripts/prepare_sources.py --check
 
 准备脚本读取 `sources.lock.json`，首次拉取上游，切到精确提交后应用 `patches/`。再次执行不会清除已有修改；遇到不同版本且目录有修改时会停止。上游默认检出为 detached HEAD，可自行创建功能分支。主仓库忽略 `reference/`，跨同事传递的改动必须导出到 `patches/`，不能只留在参考目录。
 
-UI 使用 Svelte 5 + TypeScript，服务端为 Python；引擎也为 Python。与 MainTask 建议的 Vue / Django 有差异，开发前请先看实际架构。
+UI 使用 Svelte 5 + TypeScript，服务端为 Python；引擎也为 Python。开发前请先看实际架构。
 
 ## 2. 修改产品配置
 

@@ -1,0 +1,22 @@
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-venv python3-paraview paraview \
+    ca-certificates curl git poppler-utils ffmpeg nodejs npm tini \
+    && rm -rf /var/lib/apt/lists/*
+COPY venv/ /opt/venv/
+COPY source/ /opt/hermes/
+COPY extensions/ /opt/extensions/
+COPY profile/ /opt/profile/
+COPY worker_boot.py /opt/worker_boot.py
+RUN chmod -R a+rX /opt/profile /opt/extensions /opt/venv /opt/hermes \
+    && /opt/venv/bin/python -c "import os,sys,tempfile,shutil; os.setgid(1000); os.setuid(1000); root=tempfile.mkdtemp(prefix='workspace-import-'); os.environ['HERMES_HOME']=root; os.environ['HOME']=root; sys.path.insert(0,'/opt/hermes'); from aiohttp import web; import httpx,mcp,numpy,matplotlib; from gateway.platforms.api_server import check_api_server_requirements; assert check_api_server_requirements(); shutil.rmtree(root); print('Unprivileged API and scientific dependency imports verified')"
+ENV PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    PYTHONPATH=/opt/hermes HERMES_HOME=/state HOME=/state \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    QT_QPA_PLATFORM=offscreen MPLCONFIGDIR=/state/cache/matplotlib \
+    LATEX_PAPER_WORKSPACE=/workspace/论文工程
+RUN python -c "import sys; sys.path.insert(0,'/opt/extensions/mcp/cfd-npy3d'); import make_sample as m; m.T,m.W,m.H=4,61,31; m.generate('/opt/examples/cfd')"
+WORKDIR /workspace
+ENTRYPOINT ["/usr/bin/tini", "--", "/opt/venv/bin/python", "/opt/worker_boot.py"]

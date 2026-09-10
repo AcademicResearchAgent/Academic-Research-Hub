@@ -1,6 +1,6 @@
 # 科研智能体工作站
 
-面向文献检索与综述、研究问题分析、实验方案设计和论文写作的科研助手。需求依据见 [MainTask.md](MainTask.md)，当前实现基于 Hermes + Open WebUI + DeepSeek，尚未建设独立的 Django / Vue / MySQL 应用。
+面向文献检索与综述、研究问题分析、实验方案设计和论文写作的科研助手。当前实现基于 Hermes + Open WebUI，支持多厂商模型，实际架构见 [架构说明](docs/development/ARCHITECTURE.md)。
 
 ## 新同事从这里开始
 
@@ -28,6 +28,7 @@ overlays/                 源码构建和现有镜像构建共用的修复逻辑
 scripts/                  源码准备、补丁生成、部署材料打包
 tests/                    截图等行为测试
 deploy/hermes/            现有服务器部署、验证和历史排障脚本
+deploy/workspaces/        项目文件区、隔离运行器、迁移与部署验收
 docs/development/         开发流程、架构、上线与回退边界
 docs/                     论文检索调研及测试证据
 sources.lock.json         上游提交和生产镜像锁定信息
@@ -41,6 +42,10 @@ sources.lock.json         上游提交和生产镜像锁定信息
 | 助手身份、回答风格 | `configs/workstation/SOUL.md` |
 | 产品名称、登录说明、科研建议、中文术语 | `configs/workstation/research-copy.json` |
 | 模型目录、厂商区域与 API Key 配置 | `configs/workstation/model-catalog.json`、`overlays/open-webui/workstation_models/` |
+| 模型自动检测、可用性标注 | `overlays/open-webui/ModelAvailability.ts`、`workstation_models/availability.py`，见 [模型选择说明](docs/development/MODEL-SELECTION.md) |
+| 思考流、等待提示和工具执行状态 | [流式显示接入与验收](docs/development/STREAMING.md) |
+| 检索式、来源、题名与工具结果实时显示 | [研究过程接入与验收](docs/development/RESEARCH-ACTIVITY.md) |
+| 项目、文件区、资源管理器与右侧预览编辑 | [工作区开发与验收](docs/development/WORKSPACES.md)，已部署正式服务器 |
 | 登录、聊天、科研资源等界面行为 | `reference/open-webui/src/` |
 | 账号、模型代理、文件和知识库接口 | `reference/open-webui/backend/open_webui/` |
 | Agent 工具、会话、提示词组装 | `reference/hermes-agent/tools/`、`agent/`、`gateway/` |

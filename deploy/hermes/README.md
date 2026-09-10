@@ -1,6 +1,6 @@
 # 科研智能体工作站
 
-根据项目 `MainTask.md` 定位，面向科学文献调研与实验方案设计，覆盖文献检索、摘要综述、研究空白分析、实验设计建议、论文写作辅助和可视化报告。
+项目面向科学文献调研与实验方案设计，覆盖文献检索、摘要综述、研究空白分析、实验设计建议、论文写作辅助和可视化报告。
 交互界面使用 Open WebUI，Agent 执行引擎使用 Hermes。
 
 服务器：`42.193.15.167`，SSH 用户：`ubuntu`。
@@ -19,8 +19,8 @@
 开发入口和源码结构见 [项目 README](../../README.md) 与 [开发指南](../../docs/development/DEVELOPMENT.md)。本目录保留现有部署路径和历史运维脚本，不是日常产品源码目录。
 
 登录页已标注“登录科研智能体工作站”“本站科研账号（邮箱格式）”，并说明账号由管理员统一创建、邮箱仅作为登录名。
-首页使用“新科研任务”“科研任务记录”“研究笔记”“科研资源”等表述，六个任务建议对应 MainTask 的科研工作流。
-当前界面通过 `haudi-openwebui:0.11.3-research-v5` 定制镜像持久化，包含完整源码构建的前端和个人模型配置。研究笔记和文献资料库的空状态、搜索及操作提示也使用一致术语。
+首页使用“新科研任务”“科研任务记录”“研究笔记”“科研资源”等表述，六个任务建议对应工作站的科研工作流。
+当前界面为 `haudi-openwebui:0.11.3-research-v8`，新会话按列表顺序选择第一个可用模型；沿用 v7 的按账号自动检测和 9 款型号目录，接入与发布见 [模型选择说明](../../docs/development/MODEL-SELECTION.md)。保留 v6 的模型思考流、等待计时与工具执行状态，见 [流式显示说明](../../docs/development/STREAMING.md)。研究笔记和文献资料库的空状态、搜索及操作提示也使用一致术语。
 
 统一文案在 [`configs/workstation/research-copy.json`](../../configs/workstation/research-copy.json)，科研助手身份说明在 [`configs/workstation/SOUL.md`](../../configs/workstation/SOUL.md)。运行 `python scripts/package_deploy.py` 将其以远端兼容文件名打包到 `.build/deploy/`，上传后再执行所需部署脚本；远端身份最终写入 `state/SOUL.md`。
 身份说明要求可核查引用、区分事实与推断、区分预期结果与实测结果，并按实际工具情况说明能力。
@@ -91,7 +91,7 @@ Open WebUI 容器自动重启，Hermes API 开机启动。备份时同时保存 
 - `verify-llm-chat.sh`：重启 Hermes 并通过工作站发送一次简短模型连通性测试（会调用模型 API）。
 
 登录文案更新前的容器保留为停止状态的 `haudi-openwebui-before-login-v1`；原镜像 ID 保存在 `openwebui/image-before-login.txt`。
-科研文案镜像当前为 `haudi-openwebui:0.11.3-research-v4`：保留工作站名称定制，并修复截图按钮反馈、HTTP 附件入口及捕获失败后的屏幕流释放。原有上游版权和许可声明保留。该部署有 6 个注册账号且关闭自行注册，适用固定版本 LICENSE 第 4(a) 条的 50 人及以下部署品牌修改例外；扩大使用规模前须重新核对适用条件。
+历史 v4 科研文案镜像为 `haudi-openwebui:0.11.3-research-v4`：保留工作站名称定制，并修复截图按钮反馈、HTTP 附件入口及捕获失败后的屏幕流释放。原有上游版权和许可声明保留。该部署有 6 个注册账号且关闭自行注册，适用固定版本 LICENSE 第 4(a) 条的 50 人及以下部署品牌修改例外；扩大使用规模前须重新核对适用条件。
 
 v4 更新前的容器为 `haudi-openwebui-before-20260908T041529Z`，检索配置备份在 `openwebui/retrieval-backup-20260908T041251Z`。新部署脚本使用时间戳记录回退容器和镜像，支持后续重复发布。模型文件位于 `openwebui/data/models/multilingual-e5-small`，随数据目录持久保存。具体修复和重建步骤见 [附件功能修复记录](../../docs/development/ATTACHMENT-FIXES.md)。
 

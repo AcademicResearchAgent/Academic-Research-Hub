@@ -501,4 +501,4 @@ def render_point_cloud_animation(frames, array_name, out_root, case=None,
                (path, array_name, len(frames), vmin, vmax))
 
 
-SAMPLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data")
+SAMPLE_DIR = os.environ.get("NPY3D_SAMPLE_DIR") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data")
