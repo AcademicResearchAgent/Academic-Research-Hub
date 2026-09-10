@@ -25,11 +25,14 @@ MCP 工具 (普通 Python)
 
 - 检视返回 `TimestepValues` 列表；
 - points 按 `timestep_index` 精确定位（`UpdatePipeline(time)` 后再取数据）；
-- 索引越界会明确报错。
+- `timestep_index` 会被钳制到 `[0, N-1]`（<0 取 0，≥N 取最后一帧），**不报错**；
+  返回的 `timestep_index/timestep_count` 反映实际命中帧。仅当数据集无时间步却给了非 0 索引时才报错。
+- `pvdata_import` 的 `time_slice`（`0` / `0-4` / `all`）同样按上下界钳制。
 
 ## 数组处理
 
 - 自动选择：不指定 `array_name` 时选首个标量点数组；
+- 指定名未命中：**不报错**，静默回退到上面的“自动选择”规则（先首个标量，再首个数组）；
 - CELL_DATA：`CellDatatoPointData` 转换（按单元中心转点值，单元型数据会被平滑）；
 - 向量/张量：取模后作为标量着色；
 - 非有限值（NaN/Inf）逐点剔除并统计；
