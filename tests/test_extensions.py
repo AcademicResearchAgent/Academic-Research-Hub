@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import unittest
 from unittest.mock import patch
 
@@ -102,6 +103,48 @@ class ConfigurationTests(unittest.TestCase):
         ext = json.loads((ROOT / "configs/workstation/extensions.json").read_text())
         merged = deploy.merge_config({"platform_toolsets": {"api_server": []}}, ext, Path("/srv/hub"), Path("/srv/release"))
         self.assertEqual(merged["platform_toolsets"]["api_server"], ext["api_toolsets"])
+
+
+class SkillTests(unittest.TestCase):
+    """SKILL-INTEGRATION.md §3: layout, registration, and real tool names."""
+
+    def setUp(self):
+        self.ext = json.loads((ROOT / "configs/workstation/extensions.json").read_text(encoding="utf-8"))
+        self.skills_dir = ROOT / "extensions/skills"
+
+    def _fields(self, path):
+        text = path.read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("---\n"), f"{path} has no frontmatter")
+        head = text.split("---\n", 2)[1]
+        return dict(re.findall(r"^([a-z_]+):\s*(.+?)\s*$", head, re.M))
+
+    def test_registered_skills_exist_with_matching_directory_name(self):
+        for name in self.ext["skills"]:
+            with self.subTest(skill=name):
+                self.assertEqual(name, name.lower())
+                self.assertNotIn("_", name)
+                path = self.skills_dir / name / "SKILL.md"
+                self.assertTrue(path.is_file(), f"missing {path}")
+                fields = self._fields(path)
+                self.assertEqual(fields.get("name"), name)
+                self.assertTrue(fields.get("description"))
+
+    def test_no_duplicate_skill_registration(self):
+        names = self.ext["skills"]
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_skill_tool_names_are_registered_on_their_mcp_server(self):
+        registered = {
+            f"mcp__{server}__{tool}"
+            for server, config in self.ext["mcp_servers"].items()
+            for tool in config.get("tools", {}).get("include", [])
+        }
+        pattern = re.compile(r"mcp__[a-z0-9_]+__[a-z0-9_]+")
+        for name in self.ext["skills"]:
+            for path in (self.skills_dir / name).rglob("*.md"):
+                for found in set(pattern.findall(path.read_text(encoding="utf-8"))):
+                    with self.subTest(skill=name, file=path.name, tool=found):
+                        self.assertIn(found, registered, f"{path.name} references unregistered {found}")
 
 
 class TranscriptTests(unittest.TestCase):
