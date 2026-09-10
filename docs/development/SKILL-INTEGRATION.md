@@ -50,6 +50,16 @@ description: 审阅用户提供的实验方案，检查对照、测量指标和�
 
 将名称加入 [`configs/workstation/extensions.json`](../../configs/workstation/extensions.json) 的 `skills` 数组，保留已有条目。新增依赖或工具时，同时维护相应 MCP / 插件配置；不能只在 Skill 中写一个不存在的工具名。
 
+### 默认科研范围（2026-09-09）
+
+工作站默认选择项目 `skills` 数组中的 9 项能力，以及 `skill_policy.include_upstream` 中的 10 项辅助技能：arXiv、来源引用、网页获取失败处理、PDF、Word、Excel、PowerPoint、GitHub、Python 调试、系统性调试。上游强制保留的 `hermes-agent` 运行手册另计，总计当前 20 项。
+
+部署器读取当前运行时的技能目录和插件技能注册表，将选择范围之外的名称写入 Hermes 原生 `skills.disabled`，并在 `skills.workstation_managed_disabled` 记录本项目管理的排除项。音乐、社交媒体、邮箱、商品监控、通用网页设计和桌面集成等默认停用；重复的 `latex-paper:latex-paper` 入口停用，保留 `latex-paper` 及其底层插件工具。
+
+新增项目 Skill 加入 `skills` 即进入选择范围；启用上游 Skill 则加入 `skill_policy.include_upstream`（插件技能使用完整的 `插件名:技能名`），再按下文部署。扩大范围会撤销部署器之前设置的相应禁用项，独立设置的禁用项和其他配置保留。此配置作用于工作站共用的 Hermes profile；不是逐用户权限管理，也不是文件访问沙箱。
+
+原文件保留。每次扩展部署重新计算筛选结果；直接在服务器安装新技能或升级上游后，应再运行扩展部署，不能假定这是实时拦截任意新增文件的白名单。重启后新建会话验证，不改写既有对话的缓存上下文。Skill 有说明不等于依赖和账号已经可用，文档渲染、GitHub 登录等仍须在执行时核对。
+
 ## 4. 发布到现有服务器
 
 在仓库根目录 PowerShell 中运行。前提：已按项目部署说明配置 SSH 别名、私钥和固定 known_hosts；服务器已存在本项目的 Hermes、venv 和 uv。
@@ -92,7 +102,7 @@ Open WebUI 自身也有 Workspace → Skills，支持创建 / 导入 Markdown、
 ## 7. 更新、停用和常见问题
 
 - 更新：修改仓库文件、运行测试、重新发布；新建任务验证。重启 Agent 会打断正在执行的任务，应在合适窗口操作。
-- 停用单个项目 Skill：从发布清单移除，并将服务器对应目录移动到 `state/skills` **之外**的备份目录，然后重启。只从清单移除不会删除运行时文件；本次发布器不做自动清理。
+- 停用单个项目 Skill：从发布清单 `skills` 移除并重新部署，范围策略会将仍在运行目录中的该技能禁用，原文件保留。需要彻底移走文件时，将对应目录移到 `state/skills` 之外的备份目录。
 - 找不到 Skill：检查 `HERMES_HOME`、frontmatter、目录名、`platform_toolsets.api_server` 是否含 `skills`，以及上游技能禁用设置。
 - 能加载但做不了：检查实际工具名、依赖、数据源权限和网络。外部 Skill 中的工具名称不一定能在当前引擎使用。
 - 多用户：当前这些 Skill 在执行环境共享；WebUI 的 Skill ACL 不会自动限制 Hermes 的文件目录。个人模型 Key 的隔离也不等同于 Skill 或文件沙箱隔离。

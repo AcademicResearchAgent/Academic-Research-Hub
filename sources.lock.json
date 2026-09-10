@@ -5,20 +5,24 @@
       "url": "https://github.com/NousResearch/hermes-agent.git",
       "commit": "693641aa8b4359c602283bdbbc14041e03bc47bc",
       "directory": "reference/hermes-agent",
-      "patches": ["patches/hermes-agent/0001-workstation-identity.patch"]
+      "patches": [
+        "patches/hermes-agent/0001-workstation-identity.patch"
+      ]
     },
     "open-webui": {
       "url": "https://github.com/open-webui/open-webui.git",
       "commit": "0a7c15832fb30b1903753e83f81dc7d27e5b0944",
       "directory": "reference/open-webui",
-      "patches": ["patches/open-webui/0001-workstation-copy.patch"]
+      "patches": [
+        "patches/open-webui/0001-workstation-copy.patch"
+      ]
     }
   },
   "production": {
     "openwebui_version": "0.11.3",
     "upstream_image": "sha256:6f1a2ca9afd03aad68621e97032e0ce6b92d14298e4d392186e7e9f1e98b9922",
-    "custom_image": "sha256:083a8a6696e357f64ed6cbac89533c7d0fa5986fcacff0f43bf1fddff3f23d38",
-    "custom_tag": "haudi-openwebui:0.11.3-research-v5",
-    "note": "UI commit verified from original image OCI revision label; it differs from tag v0.11.3. v5 replaces the frontend with a complete Node 22 source build and matching patched Python backend, retaining the v4 image as the dependency base."
+    "custom_image": "sha256:10ac63aa079fe3fb003071a689c7630ad4cdc9437d56afe4c35774dbf0b9ea4a",
+    "custom_tag": "haudi-openwebui:workspaces-20260910T105549133185Z",
+    "note": "Pinned upstream sources with workstation overlays. Production includes isolated project files, lazy draft creation, model availability/defaults and streamed research activity. See docs/development/WORKSPACES.md for runtime, migration, validation and rollback records."
   }
 }

@@ -1,4 +1,4 @@
-"""Build the pinned Open WebUI frontend with MainTask research-workstation copy."""
+"""Build the pinned Open WebUI frontend with research-workstation copy."""
 from collections import deque
 import ast
 import html

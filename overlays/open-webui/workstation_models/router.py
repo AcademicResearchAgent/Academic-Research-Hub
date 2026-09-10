@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse,StreamingResponse
 from pydantic import BaseModel,Field,SecretStr
 from open_webui.utils.auth import get_verified_user
 from .core import CredentialStore,runtime_envelope,session_scope
+from .streaming import stream_agent_response
+from .availability import AvailabilityChecks
 
 class PrivateValidationRoute(APIRoute):
     def get_route_handler(self):
@@ -28,6 +30,8 @@ CATALOG=json.loads((Path(__file__).parent/'catalog.json').read_text())
 MODELS={m['id']:m for m in CATALOG['models']}
 _store=None
 _attempts=defaultdict(deque)
+availability=AvailabilityChecks()
+_probe_attempts=defaultdict(deque)
 
 def store():
     global _store
@@ -77,10 +81,37 @@ async def validate(model,endpoint,key):
 @router.get('/catalog')
 async def catalog(user=Depends(get_verified_user)):
     states={}
+    models={}
     for provider in CATALOG['providers']:
         entry=await asyncio.to_thread(store().get,user.id,provider)
         states[provider]={'configured':bool(entry),'endpoint_id':entry['endpoint'] if entry else None}
-    return {**CATALOG,'credentials':states}
+        for model in CATALOG['models']:
+            if model['provider']==provider:
+                models[model['id']]=availability.snapshot(user.id,model,entry)
+    return {**CATALOG,'credentials':states,'availability':models}
+
+async def check_model(user_id,model):
+    entry=await asyncio.to_thread(store().get,user_id,model['provider'])
+    async def probe():
+        now=time.monotonic();attempts=_probe_attempts[user_id]
+        while attempts and now-attempts[0]>60:attempts.popleft()
+        if len(attempts)>=18:raise HTTPException(429,'检测较频繁，请稍后重试。')
+        attempts.append(now)
+        try:
+            await validate(model,endpoint_info(model['provider'],entry['endpoint']),entry['key'])
+        except HTTPException as error:
+            return error.detail
+        return ''
+    result=await availability.check(user_id,model,entry,probe)
+    # A key can be deleted/replaced while the provider request is in flight.
+    current=await asyncio.to_thread(store().get,user_id,model['provider'])
+    if current!=entry:
+        result=availability.snapshot(user_id,model,current)
+    return result
+
+@router.post('/models/{model_id}/check')
+async def check_availability(model_id:str,user=Depends(get_verified_user)):
+    return await check_model(user.id,model_info(model_id))
 
 class KeyForm(BaseModel):
     model_id:str
@@ -95,23 +126,23 @@ async def save_key(form:KeyForm,request:Request,user=Depends(get_verified_user))
     if any(c in key for c in '\r\n\x00'):raise HTTPException(400,'API Key 格式不正确。')
     await validate(model,endpoint,key)
     await asyncio.to_thread(store().put,user.id,model['provider'],form.endpoint_id,key,model['id'])
+    availability.invalidate(user.id,model['provider'])
+    availability.remember(user.id,model,{'endpoint':form.endpoint_id,'key':key},'available')
     return {'configured':True,'provider':model['provider'],'endpoint_id':form.endpoint_id}
 
 @router.post('/models/{model_id}/activate')
 async def activate(model_id:str,user=Depends(get_verified_user)):
     model=model_info(model_id)
-    entry=await asyncio.to_thread(store().get,user.id,model['provider'])
-    if not entry:raise HTTPException(428,'首次使用此厂商，请配置你的 API Key。')
-    if model_id not in entry['validated']:
-        rate_limit(user.id)
-        await validate(model,endpoint_info(model['provider'],entry['endpoint']),entry['key'])
-        await asyncio.to_thread(store().mark_validated,user.id,model['provider'],model_id)
+    result=await check_model(user.id,model)
+    if result['state']=='unconfigured':raise HTTPException(428,'首次使用此厂商，请配置你的 API Key。')
+    if result['state']!='available':raise HTTPException(409,result['detail'] or '模型暂不可用，请重新检测。')
     return {'ready':True,'model_id':model_id}
 
 @router.delete('/credentials/{provider}')
 async def delete_key(provider:str,user=Depends(get_verified_user)):
     if provider not in CATALOG['providers']:raise HTTPException(404,'厂商不存在。')
     await asyncio.to_thread(store().delete,user.id,provider)
+    availability.invalidate(user.id,provider)
     return {'deleted':True}
 
 async def generate_chat(request,form_data,user):
@@ -119,6 +150,9 @@ async def generate_chat(request,form_data,user):
     entry=await asyncio.to_thread(store().get,user.id,model['provider'])
     if not entry:raise HTTPException(428,'请先在模型选择器中配置此厂商的 API Key。')
     endpoint=endpoint_info(model['provider'],entry['endpoint'])
+    if os.environ.get('WORKSTATION_WORKSPACE_ROOT'):
+        from open_webui.workstation_workspace.bridge import generate_isolated
+        return await generate_isolated(form_data,user,model,endpoint,entry)
     messages=form_data.get('messages',[])
     first=next((m.get('content','') for m in messages if m.get('role')=='user'),'')
     metadata=form_data.get('metadata') or {}
@@ -128,21 +162,18 @@ async def generate_chat(request,form_data,user):
     # Whitelist forwarded fields; never forward caller-supplied routing/credential data.
     payload={'model':model['id'],'messages':messages,'stream':bool(form_data.get('stream')),'_workstation_runtime':envelope}
     client=httpx.AsyncClient(timeout=httpx.Timeout(600,connect=10),trust_env=False)
+    upstream=client.build_request('POST','http://127.0.0.1:8642/v1/chat/completions',json=payload,
+        headers={'Authorization':'Bearer '+internal_key,'X-Hermes-Session-Key':scope})
+    if payload['stream']:
+        return StreamingResponse(stream_agent_response(client,upstream),media_type='text/event-stream',
+            headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
     try:
-        response=await client.send(client.build_request('POST','http://127.0.0.1:8642/v1/chat/completions',json=payload,
-            headers={'Authorization':'Bearer '+internal_key,'X-Hermes-Session-Key':scope}),stream=True)
+        response=await client.send(upstream,stream=True)
         if response.status_code!=200:
             await response.aclose();await client.aclose()
             raise HTTPException(502,'所选模型调用失败，请检查 API Key、余额或模型权限。')
-        if not payload['stream']:
-            data=json.loads(await response.aread());await response.aclose();await client.aclose()
-            return JSONResponse(data)
+        data=json.loads(await response.aread());await response.aclose();await client.aclose()
+        return JSONResponse(data)
     except httpx.HTTPError:
         await client.aclose()
         raise HTTPException(502,'科研助手连接失败，请稍后重试。') from None
-    async def stream():
-        try:
-            async for chunk in response.aiter_bytes():yield chunk
-        finally:
-            await response.aclose();await client.aclose()
-    return StreamingResponse(stream(),media_type='text/event-stream')

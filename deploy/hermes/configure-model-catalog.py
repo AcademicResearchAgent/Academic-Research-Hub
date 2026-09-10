@@ -33,11 +33,18 @@ with httpx.Client(base_url='http://127.0.0.1:9119',timeout=45) as client:
             model={'id':entry['id'],'base_model_id':'hermes-agent','params':base.get('params',{}),'is_active':True,'access_grants':grants}
             url='/api/v1/models/create'
         else:response.raise_for_status()
-        model['name']=entry['name']
+        model['name']=entry['name'];model['is_active']=True
+        model.setdefault('meta',{})['hidden']=False
         model.setdefault('meta',{}).update({'description':entry['description']+' · 首次使用需配置个人 API Key',
             'capabilities':{**(base.get('meta',{}).get('capabilities') or {}),'vision':entry['vision']},
             'tags':[{'name':catalog['providers'][entry['provider']]['name']}]})
         response=client.post(url,json=model);response.raise_for_status()
+    for retired in catalog.get('retired_models',[]):
+        response=client.get('/api/v1/models/model',params={'id':retired})
+        if response.status_code in (401,404):continue
+        response.raise_for_status();model=response.json()
+        model['is_active']=False;model.setdefault('meta',{})['hidden']=True
+        response=client.post('/api/v1/models/model/update',json=model);response.raise_for_status()
     # Keep the base row and its grants for preset access checks, but retire its
     # public shared-key entry. Existing chat records retain their original IDs.
     base['is_active']=True
@@ -47,10 +54,11 @@ with httpx.Client(base_url='http://127.0.0.1:9119',timeout=45) as client:
     defaults=response.json()
     if not (backup/'model-defaults.json').exists():
         (backup/'model-defaults.json').write_text(json.dumps(defaults,ensure_ascii=False,indent=2))
-    selected=[m for m in (defaults.get('DEFAULT_MODELS') or '').split(',') if m and m!='hermes-agent']
+    retired={'hermes-agent',*catalog.get('retired_models',[])}
+    selected=[m for m in (defaults.get('DEFAULT_MODELS') or '').split(',') if m and m not in retired]
     defaults['DEFAULT_MODELS']=','.join(selected) or 'ws-deepseek-v4-flash'
-    defaults['DEFAULT_PINNED_MODELS']=','.join(m for m in (defaults.get('DEFAULT_PINNED_MODELS') or '').split(',') if m and m!='hermes-agent')
-    defaults['MODEL_ORDER_LIST']=[m for m in (defaults.get('MODEL_ORDER_LIST') or []) if m!='hermes-agent']
+    defaults['DEFAULT_PINNED_MODELS']=','.join(m for m in (defaults.get('DEFAULT_PINNED_MODELS') or '').split(',') if m and m not in retired)
+    defaults['MODEL_ORDER_LIST']=[m for m in (defaults.get('MODEL_ORDER_LIST') or []) if m not in retired]
     response=client.post('/api/v1/configs/models',json=defaults);response.raise_for_status()
     env=root/'openwebui/container.env'
     lines=[line for line in env.read_text().splitlines() if not line.startswith('DEFAULT_MODELS=')]
@@ -60,4 +68,5 @@ with httpx.Client(base_url='http://127.0.0.1:9119',timeout=45) as client:
     visible={m['id'] for m in response.json()['data'] if not (m.get('info',{}).get('meta',{}).get('hidden') or False)}
     assert {m['id'] for m in catalog['models']}<=visible
     assert 'hermes-agent' not in visible,'Legacy shared-key entry is still visible'
+    assert not (set(catalog.get('retired_models',[])) & visible),'Retired model is still visible'
     print(f"Registered {len(catalog['models'])} personal-key models; legacy entry hidden and defaults updated.")

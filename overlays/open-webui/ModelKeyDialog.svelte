@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import Modal from '$lib/components/common/Modal.svelte';
+  import { refreshAvailability, statusLabel, type Availability } from './ModelAvailability';
   export let show = true;
   export let modelId = '';
   const dispatch = createEventDispatcher();
@@ -10,6 +11,14 @@
   let busy = false;
   let error = '';
   let secure = false;
+  let availability: Record<string, Availability> = {};
+  let checks = new AbortController();
+  function checkModels() {
+    checks.abort(); checks = new AbortController();
+    refreshAvailability((states) => { availability = states; }, checks.signal).catch((e) => {
+      if (e.name !== 'AbortError') error = e.message;
+    });
+  }
   $: selected = catalog?.models.find((m: any) => m.id === modelId);
   $: provider = selected ? catalog.providers[selected.provider] : null;
   $: configured = selected ? catalog.credentials[selected.provider]?.configured : false;
@@ -34,9 +43,10 @@
       catalog = await request('/catalog');
       if (!catalog.models.some((m: any) => m.id === modelId)) modelId = catalog.models[0]?.id || '';
       chooseModel();
+      checkModels();
     } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
   });
-  onDestroy(() => { apiKey = ''; });
+  onDestroy(() => { apiKey = ''; checks.abort(); });
   async function save() {
     if (!secure || !apiKey.trim() || busy) return;
     busy = true; error = '';
@@ -58,7 +68,7 @@
     busy = true; error = '';
     try {
       await request('/credentials/' + selected.provider, 'DELETE');
-      catalog = await request('/catalog'); apiKey = ''; chooseModel();
+      catalog = await request('/catalog'); apiKey = ''; chooseModel(); checkModels();
     } catch (e) { error = e instanceof Error ? e.message : '操作失败，请重试。'; }
     finally { busy = false; }
   }
@@ -74,15 +84,16 @@
     {#if catalog}
       <label class="block text-sm">选择模型
         <select class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" bind:value={modelId} on:change={chooseModel} disabled={busy}>
-          {#each catalog.models as model}<option value={model.id}>{model.name}</option>{/each}
+          {#each catalog.models as model}<option value={model.id}>{model.name} · {statusLabel(availability[model.id])}</option>{/each}
         </select>
       </label>
       {#if selected && provider}
         <p class="text-sm text-gray-500">{selected.description}</p>
         <div class="flex items-center justify-between text-sm">
-          <span>{provider.name} · {configured ? '已配置' : '待配置'}</span>
+          <span>{provider.name} · {statusLabel(availability[modelId])}</span>
           <a class="underline" href={provider.key_url} target="_blank" rel="noopener noreferrer">获取 API Key</a>
         </div>
+        {#if availability[modelId]?.detail}<p class="text-xs text-gray-500" role="status">{availability[modelId].detail}</p>{/if}
         <label class="block text-sm">接入区域
           <select class="mt-1 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-2" bind:value={endpointId} disabled={busy}>
             {#each provider.endpoints as endpoint}<option value={endpoint.id}>{endpoint.name}</option>{/each}
