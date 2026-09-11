@@ -53,7 +53,7 @@ sources.lock.json         上游提交和生产镜像锁定信息
 
 论文检索现有 `extensions/mcp/paper-search`，通过 MCP 接入 Crossref 元数据、Europe PMC 检索及开放正文片段；配套文献检索 Skill 和引用排版插件。新增业务在 `extensions/` 中实现并测试，不把提示词中写出的用途当成已完成的模块。
 
-扩展能力的三个接入教程：[Skill](docs/development/SKILL-INTEGRATION.md)、[MCP](docs/development/MCP-INTEGRATION.md)、[插件](docs/development/PLUGIN-INTEGRATION.md)。包含源码约定、现有服务器发布、验证、回退，以及 Hermes 与 Open WebUI 两层接口的区别。
+扩展能力的三个接入教程：[Skill](docs/development/SKILL-INTEGRATION.md)、[MCP](docs/development/MCP-INTEGRATION.md)、[插件](docs/development/PLUGIN-INTEGRATION.md)。包含源码约定、现有服务器发布、验证、回退，以及 Hermes 与 Open WebUI 两层接口的区别。使用者请先看 [Skill 使用手册](docs/SKILL-USAGE.md)，其中汇总了内置技能清单、自然语言调用方式、产出与边界。
 
 本地 `LLM_API.md`、`server.md`、个人材料、账号录入脚本和运行数据已列入忽略规则。新同事通过管理员取得自己的开发凭据，不复制生产账号库。上游许可与版权声明保留在源码中。
 

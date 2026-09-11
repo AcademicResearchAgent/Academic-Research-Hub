@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>科研智能体工作站 · 弹出渲染新界面</title>
+<link rel="stylesheet" href="/viewer/viewer.css" />
+<script>
+/* 防闪烁：首屏绘制前应用已保存/系统偏好的主题。 */
+(function () {
+  try {
+    var t = localStorage.getItem('cfd_theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { /* 隐私模式下忽略 */ }
+})();
+</script>
+<style>
+  body { display: flex; align-items: center; justify-content: center; background: var(--bg-subtle); }
+  .launch {
+    position: relative; width: min(520px, 92vw); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 16px; padding: 26px 26px 20px;
+    box-shadow: var(--shadow);
+  }
+  .launch .brand { font-size: 15px; margin-bottom: 4px; }
+  .launch h1 { margin: 10px 0 6px; font-size: 16px; font-weight: 600; }
+  .launch p { margin: 0 0 4px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+  .launch .actions { display: flex; gap: 8px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+  .launch button.primary { width: auto; margin-top: 0; padding: 8px 16px; font-size: 13px; }
+  .launch .url {
+    margin-top: 14px; padding: 8px 10px; border: 1px dashed var(--line-strong); border-radius: 12px;
+    font-size: 11px; color: var(--muted); word-break: break-all;
+  }
+  .launch .note { margin-top: 10px; font-size: 11px; color: var(--warn); min-height: 15px; }
+  .launch .theme { position: absolute; top: 14px; right: 14px; }
+</style>
+</head>
+<body>
+  <div class="launch">
+    <button id="btnTheme" class="icon-btn ghost theme" title="切换明暗主题" aria-label="切换明暗主题">☾</button>
+    <div class="brand"><span class="dot"></span> <b>科研智能体工作站</b>
+      <span class="sub">CFD 物理图像渲染引擎</span></div>
+    <h1>正在弹出独立渲染新界面…</h1>
+    <p>渲染引擎将在独立窗口中打开；窗口尺寸、缩放与视角均由该窗口独立保持，便于与工作站界面并行观测。</p>
+    <p>若浏览器拦截了弹窗，请点击下方按钮手动打开。</p>
+    <div class="actions">
+      <button id="btnOpen" class="primary">打开渲染新界面</button>
+      <a id="linkTab" class="mini" href="#">在当前标签页打开</a>
+    </div>
+    <div class="note" id="note"></div>
+    <div class="url mono" id="urlOut"></div>
+  </div>
+
+<script>
+'use strict';
+/* 弹出式启动页：把 skill 入口参数透传给查看器，并在浏览器侧 window.open 弹出独立新界面。 */
+(function () {
+  var WIN_NAME = 'cfd_render_engine';
+  var THEME_KEY = 'cfd_theme';
+
+  /* 主题切换（与查看器共用同一 localStorage 键，保持两窗口风格同步）。 */
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    var b = document.getElementById('btnTheme');
+    if (b) {
+      b.textContent = t === 'dark' ? '☀' : '☾';
+      b.title = t === 'dark' ? '切换到浅色主题' : '切换到深色主题';
+    }
+  }
+  var cur = document.documentElement.getAttribute('data-theme')
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(cur);
+  document.getElementById('btnTheme').onclick = function () {
+    cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(cur);
+    try { localStorage.setItem(THEME_KEY, cur); } catch (e) { /* 忽略 */ }
+  };
+
+  var q = new URLSearchParams(location.search);
+  var p = new URLSearchParams({
+    frame: q.get('frame') || '0',
+    channel: q.get('channel') || '0',
+    popup: '1',
+  });
+  if (q.get('dataset')) p.set('dataset', q.get('dataset'));
+  if (q.get('paper')) p.set('paper', q.get('paper'));
+  if (q.get('t')) p.set('t', q.get('t'));   // 透传技能令牌，供弹出的渲染窗口授权
+  var target = '/viewer?' + p.toString();
+
+  document.getElementById('linkTab').setAttribute('href', target);
+  document.getElementById('urlOut').textContent = location.origin + target;
+
+  function features() {
+    var w = Math.min(1520, Math.max(960, Math.round(screen.availWidth * 0.82)));
+    var h = Math.min(980, Math.max(640, Math.round(screen.availHeight * 0.86)));
+    var left = Math.max(0, Math.round((screen.availWidth - w) / 2));
+    var top = Math.max(0, Math.round((screen.availHeight - h) / 2));
+    return 'popup=yes,width=' + w + ',height=' + h + ',left=' + left + ',top=' + top +
+           ',resizable=yes,scrollbars=no';
+  }
+
+  function openPopup() {
+    var win = window.open(target, WIN_NAME, features());
+    if (win) {
+      try { win.focus(); } catch (e) { /* 跨窗口聚焦失败可忽略 */ }
+      document.getElementById('note').textContent = '';
+    } else {
+      document.getElementById('note').textContent =
+        '弹窗被浏览器拦截：请允许本站点弹窗，或点击上方按钮重试。';
+    }
+    return win;
+  }
+
+  document.getElementById('btnOpen').onclick = openPopup;
+  window.addEventListener('DOMContentLoaded', function () { openPopup(); });
+})();
+</script>
+</body>
+</html>

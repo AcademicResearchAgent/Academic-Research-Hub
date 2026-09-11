@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>科研智能体工作站 · CFD 物理图像渲染引擎</title>
+<link rel="stylesheet" href="/viewer/viewer.css" />
+<script>
+/* 防闪烁：在首屏绘制前应用已保存/系统偏好的主题，避免浅深切换抖动。 */
+(function () {
+  try {
+    var t = localStorage.getItem('cfd_theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { /* 隐私模式下忽略 */ }
+})();
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <b>科研智能体工作站</b>
+    <span class="sub">CFD 物理图像渲染引擎</span>
+    <span class="sub" id="engineTag">WebGL</span>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge" id="statusBadge">未加载数据</span>
+    <button id="btnImportToggle" class="ghost">数据导入</button>
+    <button id="btnPopout" class="ghost">弹出新窗口</button>
+    <button id="btnPaperToggle" class="ghost">导出到论文</button>
+    <button id="btnTheme" class="icon-btn ghost" title="切换明暗主题" aria-label="切换明暗主题">☾</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- 左：数据导入入口 -->
+  <aside class="panel left" id="importPanel">
+    <h2>数据导入</h2>
+    <p class="hint">支持格式见下方清单；导入后即可实时观测三维物理场。</p>
+
+    <div class="group">
+      <label class="lbl">上传数据文件</label>
+      <input type="file" id="fileInput" multiple />
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="convertChk" checked /> 2D 平面场自动转 npy 曲面</label>
+      </div>
+      <button id="btnUpload" class="primary">导入所选文件</button>
+    </div>
+
+    <div class="group">
+      <label class="lbl">从服务器绝对路径导入</label>
+      <input type="text" id="pathInput" placeholder="E:/sim/surface.vtu 或 /data/NACA" />
+      <div class="row">
+        <input type="text" id="caseInput" placeholder="算例名称（可选）" />
+        <input type="text" id="arrayInput" placeholder="变量名（可选）" />
+      </div>
+      <button id="btnPathImport" class="primary">导入该路径</button>
+    </div>
+
+    <div class="group">
+      <div class="row between">
+        <label class="lbl">已发现数据集</label>
+        <button id="btnRefresh" class="mini">刷新</button>
+      </div>
+      <ul id="datasetList" class="ds-list"><li class="empty">（点击刷新以扫描数据目录）</li></ul>
+      <input type="text" id="dataDirInput" placeholder="数据目录（可选，默认 exp_data，自动并入导入目录）" />
+    </div>
+
+    <details class="fmt">
+      <summary>支持的导入格式</summary>
+      <table id="formatTable"><tbody></tbody></table>
+    </details>
+  </aside>
+
+  <!-- 中：渲染视口 -->
+  <section class="stage">
+    <canvas id="gl"></canvas>
+    <div id="overlay" class="overlay">正在等待数据…<br /><span class="small">从左侧导入数据，或选择一个已发现的数据集</span></div>
+    <div id="legend" class="legend hidden">
+      <canvas id="legendCanvas" width="180" height="46"></canvas>
+      <div class="legend-row"><span id="legendMin">0</span><span id="legendName">Q</span><span id="legendMax">1</span></div>
+    </div>
+    <div id="readout" class="readout"></div>
+  </section>
+
+  <!-- 右：渲染参数 -->
+  <aside class="panel right">
+    <h2>渲染参数</h2>
+
+    <div class="group">
+      <label class="lbl">渲染模式</label>
+      <select id="modeSel">
+        <option value="surface">曲面（网格三角面）</option>
+        <option value="points">点云</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <label class="lbl">色图</label>
+      <select id="cmapSel">
+        <option value="viridis">viridis</option>
+        <option value="turbo">turbo</option>
+        <option value="jet">jet</option>
+        <option value="coolwarm">coolwarm</option>
+        <option value="plasma">plasma</option>
+        <option value="gray">gray</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <label class="lbl">颜色范围</label>
+      <div class="row">
+        <input type="number" id="vminInput" placeholder="自动下限" step="any" />
+        <input type="number" id="vmaxInput" placeholder="自动上限" step="any" />
+      </div>
+      <button id="btnRangeAuto" class="mini">自动范围</button>
+    </div>
+
+    <div class="group">
+      <label class="lbl">点大小 <span id="psVal" class="mono">2.0</span></label>
+      <input type="range" id="pointSize" min="1" max="12" step="0.5" value="2" />
+    </div>
+
+    <div class="group">
+      <label class="lbl">视角</label>
+      <div class="row">
+        <input type="number" id="elevInput" step="5" value="25" title="仰角" />
+        <input type="number" id="azimInput" step="5" value="-55" title="方位角" />
+      </div>
+      <button id="btnResetView" class="mini">重置视角</button>
+    </div>
+
+    <div class="group" id="frameGroup">
+      <label class="lbl">时间帧 <span id="frameVal" class="mono">0 / 1</span></label>
+      <input type="range" id="frameRange" min="0" max="0" step="1" value="0" />
+      <div class="row">
+        <button id="btnPlay" class="mini">▶ 播放</button>
+        <select id="channelSel"></select>
+        <select id="fpsSel">
+          <option value="4">4 帧/秒</option>
+          <option value="8" selected>8 帧/秒</option>
+          <option value="12">12 帧/秒</option>
+          <option value="24">24 帧/秒</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 论文导出抽屉（可选，默认收起） -->
+  <aside class="drawer" id="paperDrawer">
+    <div class="drawer-head">
+      <h2>导出到论文</h2>
+      <button id="btnPaperClose" class="mini">收起</button>
+    </div>
+    <p class="hint">将当前视口截帧为论文级 PNG，并生成可粘贴的 LaTeX figure 片段（此步骤自愿可选）。</p>
+    <label class="lbl">图注（caption）</label>
+    <input type="text" id="capInput" placeholder="翼型尾迹瞬时 Q 场" />
+    <div class="row">
+      <input type="text" id="labInput" placeholder="标签 label（如 wake_q）" />
+      <input type="text" id="widthInput" value="\linewidth" title="\includegraphics 宽度" />
+    </div>
+    <button id="btnExport" class="primary">生成论文插图</button>
+    <div id="paperResult" class="paper-result hidden">
+      <img id="paperPreview" alt="preview" />
+      <textarea id="latexOut" rows="7" readonly></textarea>
+      <div class="row">
+        <button id="btnCopyLatex" class="mini">复制 LaTeX</button>
+        <a id="paperDownload" class="mini" download>下载 PNG</a>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script src="/viewer/viewer.js"></script>
+</body>
+</html>

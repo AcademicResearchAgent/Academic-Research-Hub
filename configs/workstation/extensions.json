@@ -55,7 +55,8 @@
           "pvdata_inspect",
           "pvdata_render_scatter3d",
           "pvdata_render_animation",
-          "pvdata_import"
+          "pvdata_import",
+          "npy3d_web_viewer"
         ],
         "resources": false,
         "prompts": false

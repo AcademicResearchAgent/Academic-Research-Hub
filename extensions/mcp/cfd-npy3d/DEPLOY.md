@@ -13,7 +13,7 @@
 
 ```
 确认 Python → pip 装依赖 → （可选）确认 pvpython → python server.py --selftest 全绿
-→ 把 cfd-npy-3d 条目合并进 .mcp.json → 重启 CodeBuddy → 在对话中看到 7 个工具
+→ 把 cfd-npy-3d 条目合并进 .mcp.json → 重启 CodeBuddy → 在对话中看到 8 个工具
 ```
 
 ---
@@ -40,12 +40,15 @@
 g:/mcp-/cfd_npy3d_mcp/          ← 部署目录（整包拷贝或原地使用）
 ├── server.py                   FastMCP server 入口（stdio）※注册时指向它
 ├── registry.py                 契约加载/校验（读 manifest.json + tools/*.json）
-├── handlers.py                 7 个工具实现（显式签名，与契约一一对应）
+├── handlers.py                 8 个工具实现（显式签名，与契约一一对应）
 ├── core.py                     X/Y/Q 协议解析 + 曲面/点云/GIF 绘制（执行层）
 ├── pvbridge.py                 读 config/paraview.json 定位 pvpython + 执行 job
 ├── pvjob_pvdata.py             pvpython 侧 job 执行器（inspect / points / import2d）
+├── webviz.py                   Web 工作台后端（格式/数据集/导入/载荷/论文导出）
+├── http_bridge.py              OpenAPI 工具桥 + /viewer、/viewer/launch 与 /api/*（监听端口的本地 HTTP 服务）
+├── webviewer/                  Web 渲染引擎前端（原生 WebGL，零外部 CDN；含 launch.html 弹出式启动页）
 ├── manifest.json               工具/技能注册清单（契约索引）
-├── tools/                      每个工具一份参数契约 JSON（7 个）
+├── tools/                      每个工具一份参数契约 JSON（8 个）
 ├── checks/                     一致性质量门（check_registry_consistency.py）
 ├── config/                     ParaView 工作配置（paraview.json / paraview_readers.json）
 ├── skills/                     SKILL.md 技能描述层（可选，方式 B 注册用）
@@ -147,6 +150,9 @@ Test-Path "D:\Program Files\ParaView 6.0.1\bin\pvpython.exe"
 | `NPY3D_OUT_ROOT` | 否 | 产物根目录；缺省 `<server.py 上级>/output` | `g:/mcp-/output` |
 | `PARAVIEW_PVPYTHON` | `pvdata_*` 建议 | `pvpython.exe` 绝对路径 | `D:/Program Files/ParaView 6.0.1/bin/pvpython.exe` |
 | `PARAVIEW_BIN` | 否 | 备选查找路径（`<PARAVIEW_BIN>/pvpython.exe`） | `D:/Program Files/ParaView 6.0.1/bin` |
+| `CFD_BRIDGE_PORT` | 否 | Web 工作台（`http_bridge.py`）监听端口 | `8765` |
+| `CFD_BRIDGE_PUBLIC_BASE` | 否 | 工作台对外基址（跨机访问时填本机可达地址） | `http://192.168.1.10:8765` |
+| `CFD_DATA_DIR` | 否 | 工作台默认扫描的数据目录 | `g:/mcp-/CFD_TEST` |
 
 > 这些变量既可设成**系统环境变量**，也可写在 MCP 配置的 `env` 里（见 §5），推荐后者——只影响该 MCP server。
 > 对于 ParaView 定位，**更推荐在扩展包 `config/paraview.json`（§3.3）里配置**——无需每次重开 IDE 都保证 env 存在。
@@ -214,13 +220,13 @@ codebuddy mcp add --scope project cfd-npy-3d -- "D:/Anaconda/python.exe" "g:/mcp
 1. **重启 CodeBuddy**（或让 MCP 连接重新加载）。
 2. `project` 作用域的 server 首次连接需在弹窗里**批准**。
 3. 在会话里输入 `/mcp` 查看服务器状态与诊断。
-4. 对话中应能看到 7 个工具；工具全名 `mcp__cfd-npy-3d__npy3d_inspect` 等。若工具不可用，检查权限设置（allow/ask/deny），并在 `/mcp` 里确认 server 已 connected。
+4. 对话中应能看到 8 个工具；工具全名 `mcp__cfd-npy-3d__npy3d_inspect` 等。若工具不可用，检查权限设置（allow/ask/deny），并在 `/mcp` 里确认 server 已 connected。
 
 ### 5.5 方式 B：skill 技能发现（可选，与 5.1~5.4 二选一）
 
 不需要 MCP 注册时，可把技能描述层交给支持 agent skills 的客户端：
 
-- 复制/软链 `skills/npy3d_visualization`、`skills/pvdata_visualization`、`skills/pvdata_import` 到客户端技能目录（Claude Code：项目 `.claude/skills/`）。
+- 复制/软链 `skills/npy3d_visualization`、`skills/pvdata_visualization`、`skills/pvdata_import`、`skills/web_visualization` 到客户端技能目录（Claude Code：项目 `.claude/skills/`）。
 - agent 通过 `SKILL.md` 的 frontmatter（name/description）自行判断何时使用并按其流程调用工具——此方式下工具仍需以 MCP（§5.1~5.4）方式注册才能被调用，SKILL.md 只是「使用说明书」；若客户端能原生执行脚本则可不注册 MCP。
 
 ---
@@ -269,6 +275,26 @@ D:\Anaconda\python.exe g:\mcp-\cfd_npy3d_mcp\server.py --selftest
 
 全部返回正常路径且图片可打开即部署成功。
 
+### 7.3 Web 可视化工作台验收（可选）
+
+MCP 侧（stdio）与 Web 工作台（HTTP）是**两条独立入口**，后者按需单起：
+
+```powershell
+D:\Anaconda\python.exe g:\mcp-\cfd_npy3d_mcp\http_bridge.py --host 127.0.0.1 --port 8765
+```
+
+1. 浏览器打开弹出式入口 `http://127.0.0.1:8765/viewer/launch`（或直接开 `http://127.0.0.1:8765/viewer`），
+   应看到「数据导入 / 渲染视口 / 渲染参数」三栏；
+2. 左侧「已发现数据集」刷新后点选一个 `.npy` 数据集 → 中间出现三维曲面，可拖拽旋转、滚轮缩放；
+3. 在「从服务器绝对路径导入」填一个 ParaView 文件路径（勾选 2D 平面场自动转 npy）→ 导入并渲染；
+4. 点「导出到论文」→ 出现预览、LaTeX 片段与下载链接（产物落 `<产物根>/figures/`）。
+
+命令行自测（不依赖浏览器）：
+
+```powershell
+D:\Anaconda\python.exe -m unittest discover -s tests -p test_cfd_npy3d_webviz.py -v
+```
+
 ---
 
 ## 8. 日常使用示例
@@ -288,6 +314,10 @@ pvdata_render_scatter3d(file_path="E:/sim/case.vtu", array_name="pressure", time
 
 # ParaView 时变文件动画（时间步很多时先 inspect 看步数）
 pvdata_render_animation(file_path="E:/sim/case.pvd", array_name="velocity", max_frames=24, fps=6, case="sim1")
+
+# Web 工作台入口（导入 + 浏览器实时交互渲染 + 可选论文插图导出）
+npy3d_web_viewer(file_path="E:/sim/case.vtu", embed_in_paper=True)
+# 或先起服务再直接开页面：http_bridge.py --port 8765 → http://127.0.0.1:8765/viewer/launch（弹出独立渲染新界面）
 ```
 
 ---
@@ -324,7 +354,10 @@ pvdata_render_animation(file_path="E:/sim/case.pvd", array_name="velocity", max_
 
 ## 11. 安全与注意事项
 
-- 该 server 只做**本地文件读取 + 绘图**，不监听端口、不访问网络、不写系统目录。
+- MCP server（`server.py`，stdio）只做**本地文件读取 + 绘图**，不监听端口、不访问网络、不写系统目录。
+- 若要使用 **Web 可视化工作台**，需单独启动 `http_bridge.py`：它会在指定 `--host/--port`
+  上提供本地 HTTP 服务（默认 `127.0.0.1:8765`，含 `/viewer`、`/viewer/launch` 与 `/api/*`）。除产物目录外不写其它位置；
+  供他人访问时请只绑定内网地址并注意 `CFD_BRIDGE_PUBLIC_BASE` 的暴露范围。
 - `env` 里不要硬编码密钥类敏感信息；本扩展无需任何密钥。
 - 大 `.npy`（1 GB 级）按 `mmap` 流式读，`pvdata_*` 大数据按 `max_points` 子采样，一般不会 OOM；但超大时仍建议先 `inspect`。
 - 首次调用 `pvdata_*` 会启动一次 pvpython，耗时数秒属正常。

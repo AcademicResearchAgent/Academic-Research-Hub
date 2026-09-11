@@ -1,0 +1,66 @@
+{
+  "name": "npy3d_web_viewer",
+  "title": "Web 可视化工作台入口（数据导入 + 实时渲染 + 论文插图）",
+  "description": "选中可视化技能后的统一功能入口：默认返回「弹出式启动页」地址，使用该技能时会弹出独立渲染新界面（沿用同一深色科研风 UI）；界面为 WebGL 实时三维渲染，可旋转/缩放/切帧/换色图，并可列出当前支持的导入格式与已发现数据集。传入 file_path 时先把该「支持格式」的数据文件（.npy 数据集目录随附文件，或 ParaView 常见格式 .vtk/.vtu/.vti/.vts/.vtr/.vtp/.ex2/.vtm/.pvd/.xdmf/.stl/.ply/.obj/.csv）导入到统一产物根供渲染引擎读取；x-y 平面 2D 场会顺带转换为 X/Y/Q .npy 规则曲面。embed_in_paper=True 时在返回文本中额外给出论文插图（LaTeX figure 片段）导出指引——该步完全由用户选择，不勾选则不产生任何论文产物。",
+  "family": "npy3d",
+  "data_source": "npy_or_paraview",
+  "requires_pvpython": false,
+  "returns": "markdown",
+  "arguments": [
+    {
+      "name": "data_dir",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "要扫描的数据目录（缺省用 CFD_DATA_DIR，再退回包内上级 exp_data 目录）。"
+    },
+    {
+      "name": "file_path",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "可选：要导入的支持格式数据文件绝对路径；给了就先把文件导入统一产物根（import/<case>/），再返回入口。"
+    },
+    {
+      "name": "dataset",
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "可选：预选数据集（绝对路径或数据目录中的名称），用于生成带 dataset 参数的入口 URL。"
+    },
+    {
+      "name": "frame",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "入口 URL 预选时间帧（默认 0）。"
+    },
+    {
+      "name": "channel",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "入口 URL 预选物理量通道（默认 0）。"
+    },
+    {
+      "name": "embed_in_paper",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "description": "是否启用「导出到论文」引导（在渲染引擎内一键生成 PNG + LaTeX figure 片段）。默认 false；启用与否完全由用户选择。"
+    },
+    {
+      "name": "open_in",
+      "type": "string",
+      "required": false,
+      "default": "popup",
+      "description": "入口打开方式：popup=弹出独立渲染新界面（默认，返回弹出式启动页地址）；tab=直接返回查看器地址，在浏览器标签页中打开。"
+    }
+  ],
+  "examples": [
+    "npy3d_web_viewer()",
+    "npy3d_web_viewer(file_path=\"E:/sim/cavity.vtu\", embed_in_paper=True)",
+    "npy3d_web_viewer(data_dir=\"E:/CFD_TEST\", dataset=\"NACA_Cylinder\", frame=12, channel=0)",
+    "npy3d_web_viewer(dataset=\"NACA\", open_in=\"tab\")"
+  ]
+}

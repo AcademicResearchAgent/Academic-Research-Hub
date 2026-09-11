@@ -81,7 +81,8 @@ def main(root):
         loaded_skills = ["research-literature"]
         for name, tool in (("npy3d-visualization", "mcp__cfd_npy3d__npy3d_render_surface"),
                            ("pvdata-visualization", "mcp__cfd_npy3d__pvdata_render_scatter3d"),
-                           ("pvdata-import", "mcp__cfd_npy3d__pvdata_import")):
+                           ("pvdata-import", "mcp__cfd_npy3d__pvdata_import"),
+                           ("cfd-web-visualization", "mcp__cfd_npy3d__npy3d_web_viewer")):
             loaded = json.loads(skill_view(name))
             assert tool in json.dumps(loaded) and not loaded.get("error"), f"skill {name} failed to load"
             loaded_skills.append(name)

@@ -30,12 +30,15 @@ description: 把以 X/Y/Q 三个 .npy 存储的 CFD 平面场（NACA 翼型/圆�
 | `mcp__cfd_npy3d__npy3d_inspect` | 推断 T/C/H×W、报告文件与坐标范围、首帧各通道统计（先检视再作图） |
 | `mcp__cfd_npy3d__npy3d_render_surface` | 单帧三维曲面 PNG；`channels="0"/"all"/"0,2"/"1-3"` |
 | `mcp__cfd_npy3d__npy3d_render_animation` | 单通道时间序列三维曲面 GIF |
+| `mcp__cfd_npy3d__npy3d_web_viewer` | Web 工作台入口：数据导入 + 浏览器内实时交互渲染（旋转/切帧/换通道/换色图），可选导出论文插图 |
 
 ## 标准流程
 
 1. **检视**：`mcp__cfd_npy3d__npy3d_inspect(data_dir=<目录>)` 确认 T、C、H×W 与各通道范围；
 2. **单帧**：`mcp__cfd_npy3d__npy3d_render_surface(data_dir=..., frame=<想看的时间帧>, channels="<想看的通道>", case=<归档名>)`；
-3. **动画**（T≥2 且目标通道抽样帧无 NaN）：`mcp__cfd_npy3d__npy3d_render_animation(data_dir=..., channel=<通道>, max_frames=<帧数>, case=<归档名>)`。
+3. **动画**（T≥2 且目标通道抽样帧无 NaN）：`mcp__cfd_npy3d__npy3d_render_animation(data_dir=..., channel=<通道>, max_frames=<帧数>, case=<归档名>)`；
+4. **实时观测**（用户想边看边调参时）：`mcp__cfd_npy3d__npy3d_web_viewer(data_dir=<目录>)`
+   打开 Web 渲染引擎；详见 `cfd-web-visualization` 技能。
 
 ## 参数约定
 

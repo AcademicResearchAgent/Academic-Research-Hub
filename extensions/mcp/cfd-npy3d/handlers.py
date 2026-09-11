@@ -15,6 +15,7 @@ import re
 import core
 import pvbridge
 import registry
+import webviz
 
 OUT_ROOT = registry.OUT_ROOT
 SAMPLE_DIR = core.SAMPLE_DIR
@@ -240,6 +241,82 @@ def pvdata_import(
     return "\n".join(lines)
 
 
+def npy3d_web_viewer(
+    data_dir: str | None = None,
+    file_path: str | None = None,
+    dataset: str | None = None,
+    frame: int = 0,
+    channel: int = 0,
+    embed_in_paper: bool = False,
+    open_in: str = "popup",
+) -> str:
+    """Web 可视化工作台入口：数据导入 + 实时渲染引擎 +（可选）论文插图导出。"""
+    lines = ["## Web 可视化工作台（数据导入 + 实时渲染 + 论文插图）", ""]
+
+    report = None
+    if file_path:
+        report = webviz.import_file(file_path=file_path, convert=True)
+        lines += ["### 导入结果", "",
+                  "- 文件: `%s`" % report["file"],
+                  "- 类别: **%s**%s" % (report["kind"], "（已转 X/Y/Q .npy）"
+                                        if report.get("converted") else ""),
+                  "- 说明: %s" % report.get("message", "")]
+        if report.get("data_dir"):
+            lines.append("- data_dir: `%s`" % report["data_dir"])
+        lines.append("")
+
+    preset = report.get("data_dir") if report else dataset
+    url = webviz.entry_url(preset, frame, channel, embed_in_paper, open_in)
+    popup = str(open_in or "").strip().lower() != "tab"
+    lines += ["### 打开渲染引擎", "",
+              "**入口**: %s" % url,
+              "",
+              ("**打开方式**: 弹出独立渲染新界面（浏览器侧弹窗；若被拦截请在启动页点击"
+               "「打开渲染新界面」）" if popup
+               else "**打开方式**: 在浏览器标签页中打开"),
+              "",
+              "> 渲染新界面与工作站同一套深色科研风 UI，打开后可：旋转/缩放/平移、拖动时间帧、"
+              "切换物理量通道与色图、调颜色范围；左侧「数据导入」可继续上传或按路径导入"
+              "支持格式的数据文件；顶栏「弹出新窗口」可再开一个独立窗口并行对照。",
+              ""]
+
+    try:
+        rows = webviz.list_datasets(data_dir)
+    except Exception as e:                                   # noqa: BLE001
+        rows = []
+        lines.append("（数据集扫描失败：%s）" % e)
+    if rows:
+        lines += ["### 已发现数据集（点击列表即可渲染）", "",
+                  "| 类型 | 名称 | 帧/通道 | 网格 |",
+                  "| --- | --- | --- | --- |"]
+        for it in rows:
+            fr = "%s / %s" % (it.get("frames"), it.get("channels"))
+            grid = "x".join(str(v) for v in (it.get("grid") or [])) or "-"
+            flag = "" if it.get("renderable") else "（不可渲染：%s）" % it.get("note", "")
+            lines.append("| %s | `%s` %s | %s | %s |"
+                         % (it["kind"], it["label"], flag, fr, grid))
+        lines.append("")
+    else:
+        lines += ["### 已发现数据集", "",
+                  "（`%s` 下暂无数据集，请先用左侧「数据导入」或传 `file_path` 导入）"
+                  % (data_dir or webviz.default_data_dir()), ""]
+
+    lines += ["### 支持的导入格式", "", "| 扩展名 | 说明 |", "| --- | --- |"]
+    for g in webviz.format_groups():
+        lines.append("| `%s` | %s |" % (" ".join(g["ext"]), g.get("note") or g["label"]))
+    lines += ["", "### 下一步", "",
+              "- 渲染规则曲面/动画：`npy3d_render_surface` / `npy3d_render_animation`",
+              "- 渲染三维点云：`pvdata_render_scatter3d` / `pvdata_render_animation`",
+              "- `npy3d_inspect` / `pvdata_inspect` 可先核对数据布局与数组范围"]
+
+    if embed_in_paper:
+        lines += ["", "### 导出到论文（用户可选）", "",
+                  "在渲染引擎里点「导出到论文」，填 caption/label 后即可得到论文级 PNG 与"
+                  "可直接粘贴的 LaTeX `figure` 片段；产物落在 `<产物根>/figures/`。",
+                  "由用户决定是否启用，不启用则不产生任何论文产物。"]
+    return "\n".join(lines)
+
+
 HANDLERS = {
     "npy3d_inspect": npy3d_inspect,
     "npy3d_render_surface": npy3d_render_surface,
@@ -248,6 +325,7 @@ HANDLERS = {
     "pvdata_render_scatter3d": pvdata_render_scatter3d,
     "pvdata_render_animation": pvdata_render_animation,
     "pvdata_import": pvdata_import,
+    "npy3d_web_viewer": npy3d_web_viewer,
 }
 
 
