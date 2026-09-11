@@ -41,6 +41,7 @@ description: 把 ParaView 支持的任意格式数据文件（.vtu/.vtp/.vti/.vt
 | `mcp__cfd_npy3d__npy3d_inspect` | 导入后核对 X/Y/Q 数据集（T/C/H/W 推断） |
 | `mcp__cfd_npy3d__npy3d_render_surface` | 导入后的规则网格三维曲面 PNG |
 | `mcp__cfd_npy3d__npy3d_render_animation` | 导入后的时间序列曲面 GIF |
+| `mcp__cfd_npy3d__npy3d_web_viewer` | Web 工作台入口：`file_path` 一步完成导入 + 浏览器内实时交互渲染（无需写脚本），可选导出论文插图 |
 
 ## 标准流程
 
@@ -54,6 +55,9 @@ description: 把 ParaView 支持的任意格式数据文件（.vtu/.vtp/.vti/.vt
    - 返回 `data_dir`（`X.npy/Y.npy/Q.npy` 所在目录）。
 3. **渲染**：`mcp__cfd_npy3d__npy3d_render_surface(data_dir=<上一步 data_dir>, frame=<0..T-1>, channels="0", case=...)`
    或 `mcp__cfd_npy3d__npy3d_render_animation(data_dir=..., channel=0, max_frames=48, fps=6)`。
+4. **（可选）Web 实时观测**：`mcp__cfd_npy3d__npy3d_web_viewer(file_path=<源文件>)`
+   ——导入并打开浏览器渲染引擎交互式看图；x-y 平面 2D 场会自动转 X/Y/Q。
+   详见 `cfd-web-visualization` 技能。
 
 ## 自动处理规则
 

@@ -10,11 +10,13 @@
     "tools/pvdata_inspect.json",
     "tools/pvdata_render_scatter3d.json",
     "tools/pvdata_render_animation.json",
-    "tools/pvdata_import.json"
+    "tools/pvdata_import.json",
+    "tools/npy3d_web_viewer.json"
   ],
   "skills": [
     "skills/npy3d_visualization",
     "skills/pvdata_visualization",
-    "skills/pvdata_import"
+    "skills/pvdata_import",
+    "skills/web_visualization"
   ]
 }

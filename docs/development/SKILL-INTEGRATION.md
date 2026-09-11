@@ -14,6 +14,8 @@ Hermes 使用 Agent Skills 格式：一个目录、一份带 YAML frontmatter �
 
 它指导 Agent 使用论文 MCP 检索、核对 DOI、读取可得正文，并明确记录“元数据 / 摘要 / 全文片段”三个证据层级。最后可调用引用插件排版。它不会赋予付费数据库权限，也不把前几条搜索结果称为系统综述。
 
+带网页产出的例子：[`extensions/skills/cfd-web-visualization/SKILL.md`](../../extensions/skills/cfd-web-visualization/SKILL.md)。它指导 Agent 调用 `cfd-npy3d` 工具，把 `.npy` 平面场或 ParaView 文件渲染成可交互三维视图，并以弹出窗口方式打开渲染引擎。前端界面（`index.html` / `launch.html` / `viewer.js` / `viewer.css`）属于同一个 MCP 扩展，随发布包一起分发。
+
 ```text
 extensions/skills/research-literature/SKILL.md    团队维护的源文件
 configs/workstation/extensions.json             发布清单
@@ -52,13 +54,17 @@ description: 审阅用户提供的实验方案，检查对照、测量指标和�
 
 ### 默认科研范围（2026-09-09）
 
-工作站默认选择项目 `skills` 数组中的 9 项能力，以及 `skill_policy.include_upstream` 中的 10 项辅助技能：arXiv、来源引用、网页获取失败处理、PDF、Word、Excel、PowerPoint、GitHub、Python 调试、系统性调试。上游强制保留的 `hermes-agent` 运行手册另计，总计当前 20 项。
+工作站默认选择项目 `skills` 数组中的 10 项能力，以及 `skill_policy.include_upstream` 中的 10 项辅助技能：arXiv、来源引用、网页获取失败处理、PDF、Word、Excel、PowerPoint、GitHub、Python 调试、系统性调试。上游强制保留的 `hermes-agent` 运行手册另计，总计当前 21 项。
 
 部署器读取当前运行时的技能目录和插件技能注册表，将选择范围之外的名称写入 Hermes 原生 `skills.disabled`，并在 `skills.workstation_managed_disabled` 记录本项目管理的排除项。音乐、社交媒体、邮箱、商品监控、通用网页设计和桌面集成等默认停用；重复的 `latex-paper:latex-paper` 入口停用，保留 `latex-paper` 及其底层插件工具。
 
 新增项目 Skill 加入 `skills` 即进入选择范围；启用上游 Skill 则加入 `skill_policy.include_upstream`（插件技能使用完整的 `插件名:技能名`），再按下文部署。扩大范围会撤销部署器之前设置的相应禁用项，独立设置的禁用项和其他配置保留。此配置作用于工作站共用的 Hermes profile；不是逐用户权限管理，也不是文件访问沙箱。
 
 原文件保留。每次扩展部署重新计算筛选结果；直接在服务器安装新技能或升级上游后，应再运行扩展部署，不能假定这是实时拦截任意新增文件的白名单。重启后新建会话验证，不改写既有对话的缓存上下文。Skill 有说明不等于依赖和账号已经可用，文档渲染、GitHub 登录等仍须在执行时核对。
+
+### 带网页界面的 Skill
+
+若 Skill 依赖的 MCP 服务自带网页界面（例如 `cfd-web-visualization` 驱动的 `cfd-npy3d` 渲染引擎），前端资源应放在服务目录内（如 `extensions/mcp/cfd-npy3d/webviewer/`）。[`scripts/package_extensions.py`](../../scripts/package_extensions.py) 会连同 `.html / .js / .css / .svg` 一起归档，运行期产物目录 `output/` 不会被发布；`tests/test_extensions.py` 会校验入口文件确实进入发布包。
 
 ## 4. 发布到现有服务器
 

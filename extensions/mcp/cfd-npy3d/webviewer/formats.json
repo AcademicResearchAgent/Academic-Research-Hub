@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "note": "「选择可视化技能后的数据导入入口」支持格式清单（单一事实源，前后端共用）。",
+  "formats": [
+    {
+      "kind": "npy",
+      "label": "X/Y/Q .npy 平面场数据集",
+      "ext": [".npy"],
+      "convert": false,
+      "note": "同一目录含 X.npy / Y.npy / Q.npy；Q 布局 (H,W)/(C,H,W)/(T,H,W)/(T,C,H,W)。"
+    },
+    {
+      "kind": "paraview",
+      "label": "ParaView 常见格式（点云/网格）",
+      "ext": [".vtk", ".vtu", ".vti", ".vts", ".vtr", ".vtp", ".ex2", ".vtm", ".pvd", ".xdmf", ".xmf", ".stl", ".ply", ".obj", ".csv"],
+      "convert": true,
+      "note": "x-y 平面 2D 场可一键转换为 X/Y/Q .npy 规则曲面；其余按三维点云渲染。"
+    }
+  ]
+}

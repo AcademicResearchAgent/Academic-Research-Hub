@@ -7,13 +7,32 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# 文本资源：归档前把 CRLF 归一化为 LF，保证跨平台发布产物字节稳定。
+# 其中 .html/.js/.css/.svg/.map 是 Web 渲染引擎（webviewer/）前端资源，
+# 必须随扩展一起发布，否则部署后 http_bridge 找不到静态文件。
+TEXT_SUFFIXES = {".py", ".md", ".yaml", ".yml", ".txt", ".json",
+                 ".html", ".js", ".css", ".svg", ".map"}
+# 二进制资源：图标/字体等按原始字节归档，不做换行改写。
+BINARY_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico",
+                   ".woff", ".woff2", ".ttf", ".otf"}
+INCLUDE_SUFFIXES = TEXT_SUFFIXES | BINARY_SUFFIXES
+# 运行期产物目录（如渲染出的 png/gif、导入的 npy/vtk）不属于扩展发布内容。
+EXCLUDE_DIRS = {"__pycache__", "output"}
 
-def main():
+
+def collect_files():
+    """Return the release payload as an ordered ``relative path -> bytes`` mapping."""
     files = {}
     for path in sorted((ROOT / "extensions").rglob("*")):
-        # .json 契约文件（tools/*.json、manifest.json 等）随扩展一起归档。
-        if path.is_file() and "__pycache__" not in path.parts and path.suffix in {".py", ".md", ".yaml", ".txt", ".json"}:
-            files[path.relative_to(ROOT / "extensions").as_posix()] = path.read_bytes().replace(b"\r\n", b"\n")
+        if not path.is_file() or EXCLUDE_DIRS.intersection(path.parts):
+            continue
+        suffix = path.suffix.lower()
+        if suffix not in INCLUDE_SUFFIXES:
+            continue
+        data = path.read_bytes()
+        if suffix in TEXT_SUFFIXES:
+            data = data.replace(b"\r\n", b"\n")
+        files[path.relative_to(ROOT / "extensions").as_posix()] = data
     files["config.json"] = (ROOT / "configs/workstation/extensions.json").read_bytes().replace(b"\r\n", b"\n")
     config = json.loads(files["config.json"])
     cfd_tools = config["mcp_servers"]["cfd_npy3d"]["tools"]["include"]
@@ -31,6 +50,11 @@ def main():
             files["skills/" + name + "/" + path.relative_to(source_root).as_posix()] = content.encode("utf-8")
     for name in ("deploy-extensions.py", "verify-extensions.py"):
         files[name] = (ROOT / "deploy/hermes" / name).read_bytes().replace(b"\r\n", b"\n")
+    return files
+
+
+def main():
+    files = collect_files()
     digest = hashlib.sha256()
     for name, data in sorted(files.items()):
         digest.update(name.encode() + b"\0" + data)

@@ -7,6 +7,17 @@
 - `npy3d_*`：面向 X/Y/Q `.npy` 存储的 CFD 平面场，做 3D 曲面图 / 时间 GIF 动画。
 - `pvdata_*`：面向 ParaView 原生支持的文件格式（`.vtu/.vtp/.vti/.vts/.vtr/.vtk/.vtm/.ex2/.pvd/.xdmf/.stl/.ply/.obj/.csv...`），通过 **pvpython 任务桥** 读取数据，把网格点 + 标量/向量数组画成三维点云着色图或 GIF 动画。
 
+另有 **Web 可视化工作台**（`http_bridge.py` + `webviewer/`）：浏览器内实时交互渲染引擎，
+支持导入上述两类数据文件、旋转/切帧/换通道/换色图，并可按用户选择导出论文插图
+（PNG + LaTeX figure 片段）。入口：弹出式启动页 `http://<host>:<port>/viewer/launch`
+（技能默认，弹出独立渲染新界面），渲染引擎本体 `http://<host>:<port>/viewer`。
+
+> 该渲染服务的定位是**技能后端**，不是可自由浏览的网站：查看器页面（`/viewer`、
+> `/viewer/launch`）与 `/api/*` 只对携带**技能共享令牌**的请求开放（`?t=<token>`
+> 或 `X-Bridge-Token` 请求头），直接访问会返回「技能专用」提示页。令牌由
+> `webviz.bridge_token()` 生成（环境变量 `CFD_BRIDGE_TOKEN` 优先，否则落在产物根
+> `.bridge_token`），技能入口 URL 会自动携带，用户无需手工拼接。
+
 可在 CodeBuddy / Claude Desktop 等客户端里作为第二个 MCP server 调用。
 
 ## 架构（v1.2 起，契约驱动）
@@ -35,6 +46,7 @@ skills/*/SKILL.md                   技能描述层（可选，二选一方式�
 | `pvdata_render_scatter3d` | ParaView 格式 | 指定数组某时间步的三维点云着色 PNG；向量自动取模，单元数组自动转点数组。 |
 | `pvdata_render_animation` | ParaView 格式（时变） | 逐时间步点云着色 GIF 动画，颜色区间固定。 |
 | `pvdata_import` | ParaView 格式 | x-y 平面 2D 场导入为 X/Y/Q `.npy`（支持 ParaView 全部 reader 格式，见 `skills/pvdata_import`），供 `npy3d_*` 渲染曲面/动画。 |
+| `npy3d_web_viewer` | `.npy` / ParaView 格式 | Web 工作台入口：给出浏览器渲染引擎地址 + 支持格式清单 + 已发现数据集；传 `file_path` 时先导入该文件。可选论文插图导出。 |
 
 ## 安装/注册
 
@@ -42,8 +54,8 @@ skills/*/SKILL.md                   技能描述层（可选，二选一方式�
 
 使用方式**二选一**：
 
-- **方式 A（推荐）：MCP server 注册** —— 7 个工具以 `npy3d_*`/`pvdata_*` 出现在工具列表，见下节；
-- **方式 B：skill 技能发现** —— 把 `skills/npy3d_visualization`、`skills/pvdata_visualization`、`skills/pvdata_import` 复制或软链到客户端技能目录（Claude Code：`.claude/skills/`），agent 按 SKILL.md 的描述自行决定调用流程（需客户端支持 agent skills）。
+- **方式 A（推荐）：MCP server 注册** —— 8 个工具以 `npy3d_*`/`pvdata_*` 出现在工具列表，见下节；
+- **方式 B：skill 技能发现** —— 把 `skills/npy3d_visualization`、`skills/pvdata_visualization`、`skills/pvdata_import`、`skills/web_visualization` 复制或软链到客户端技能目录（Claude Code：`.claude/skills/`），agent 按 SKILL.md 的描述自行决定调用流程（需客户端支持 agent skills）。
 
 ### 1. 在 CodeBuddy 中添加扩展 server（方式 A）
 
@@ -81,6 +93,23 @@ python g:\mcp-\cfd_npy3d_mcp\server.py --selftest
 4. 若 `pvpython` 可用且附近能找到 ParaView 自带 `disk_out_ref.ex2`，跑 `pvdata_inspect` / `pvdata_render_scatter3d` / `pvdata_render_animation`。
 
 只想跑质量门：`python g:\mcp-\cfd_npy3d_mcp\server.py --check`（等价 `python checks/check_registry_consistency.py`）。
+
+### 3. Web 可视化工作台（数据导入 + 实时渲染 + 论文插图）
+
+```powershell
+python extensions/mcp/cfd-npy3d/http_bridge.py --host 127.0.0.1 --port 8765
+# 启动时会打印带令牌的技能入口（技能专用）：
+#   viewer (skill-only) -> http://127.0.0.1:8765/viewer/launch?...&t=<token>
+```
+
+- 左侧「数据导入」：上传文件或填服务器路径，支持 `.npy` 数据集目录与全部 ParaView reader 格式；
+- 中间视口：WebGL 实时渲染，鼠标拖拽旋转、滚轮缩放、Shift 拖拽平移，右侧切帧/换通道/换色图；
+- 「导出到论文」（可选）：截帧为论文级 PNG 并生成 LaTeX `figure` 片段，产物落 `<产物根>/figures/`；
+- **技能专用后端**：`/viewer`、`/viewer/launch` 与 `/api/*` 需带共享令牌；漏带令牌返回 403
+  「技能专用」提示页 / JSON。令牌默认由 `webviz.bridge_token()` 落盘到 `<产物根>/.bridge_token`
+  （该隐藏文件也不会经 `/files/*` 对外服务），也可用 `CFD_BRIDGE_TOKEN` 显式指定；
+- 跨机访问用 `CFD_BRIDGE_PUBLIC_BASE` 指定对外基址，`CFD_BRIDGE_PORT` 指定端口；
+- 回归测试：`python -m unittest discover -s tests -p test_cfd_npy3d_webviz.py -v`。
 
 ## 数据协议
 
@@ -162,18 +191,26 @@ pvdata_render_animation(
 cfd_npy3d_mcp/
 ├── server.py              # 入口：按 registry 自动注册工具（FastMCP stdio）
 ├── registry.py            # 契约加载/校验（manifest.json + tools/*.json）
-├── handlers.py            # 7 个工具实现（显式签名，与契约一一对应）
+├── handlers.py            # 8 个工具实现（显式签名，与契约一一对应）
 ├── core.py                # 执行层：X/Y/Q 协议解析 + 3D 曲面/点云/动画 绘制
 ├── pvbridge.py            # 定位 pvpython（config/paraview.json）并执行 JSON job 的桥
 ├── pvjob_pvdata.py        # 在 pvpython 下运行的 job 执行器（inspect/points/import2d）
+├── webviz.py              # Web 工作台后端（格式/数据集/导入/渲染载荷/论文导出）
+├── http_bridge.py         # OpenAPI 工具桥 + /viewer 与 /api/* 端点（技能令牌门禁）
+├── webviewer/             # Web 渲染引擎前端（原生 WebGL，零外部 CDN）
+│   ├── launch.html        # 弹出式启动页（技能默认入口，弹出独立渲染新界面）
+│   ├── index.html         # 数据导入入口 + 渲染视口 + 参数面板
+│   ├── viewer.js / viewer.css
+│   └── formats.json       # 支持导入格式清单（单一事实源）
 ├── manifest.json          # 工具/技能注册清单（契约索引）
-├── tools/                 # 每个工具一份参数契约 JSON（7 个）
+├── tools/                 # 每个工具一份参数契约 JSON（8 个）
 ├── config/                # ParaView 工作配置（paraview.json / paraview_readers.json）
 ├── checks/                # 一致性质量门（check_registry_consistency.py）
 ├── skills/                # SKILL.md 技能描述层（二选一使用方式 B）
 │   ├── npy3d_visualization/
 │   ├── pvdata_visualization/
-│   └── pvdata_import/
+│   ├── pvdata_import/
+│   └── web_visualization/
 ├── make_sample.py         # 生成 sample_data/ 演示数据
 ├── sample_data/           # 合成圆柱绕流 (48帧, 5通道, 81x201)
 ├── requirements.txt

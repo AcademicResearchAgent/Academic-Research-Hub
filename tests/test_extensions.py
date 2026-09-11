@@ -24,6 +24,7 @@ plugin = load("citations", "extensions/plugins/research-citations/__init__.py")
 deploy = load("deployment", "deploy/hermes/deploy-extensions.py")
 chat = load("chat_verification", "deploy/hermes/verify-extensions-chat.py")
 resolvers = load("ars_resolvers", "extensions/mcp/ars-resolvers/server.py")
+packaging = load("packaging", "scripts/package_extensions.py")
 
 
 class PaperTests(unittest.TestCase):
@@ -201,6 +202,40 @@ class SkillTests(unittest.TestCase):
                 for found in set(pattern.findall(path.read_text(encoding="utf-8"))):
                     with self.subTest(skill=name, file=path.name, tool=found):
                         self.assertIn(found, registered, f"{path.name} references unregistered {found}")
+
+
+class PackagingTests(unittest.TestCase):
+    """SKILL-INTEGRATION.md §4: 前端静态资源必须随扩展一起发布。"""
+
+    VIEWER_ASSETS = (
+        "mcp/cfd-npy3d/webviewer/index.html",
+        "mcp/cfd-npy3d/webviewer/launch.html",
+        "mcp/cfd-npy3d/webviewer/viewer.js",
+        "mcp/cfd-npy3d/webviewer/viewer.css",
+        "mcp/cfd-npy3d/webviewer/formats.json",
+    )
+
+    def setUp(self):
+        self.files = packaging.collect_files()
+
+    def test_release_archive_includes_web_viewer_assets(self):
+        for name in self.VIEWER_ASSETS:
+            with self.subTest(file=name):
+                self.assertIn(name, self.files, f"{name} 未随扩展发布，部署后查看器会缺文件")
+
+    def test_release_archive_includes_skill_and_tool_contract(self):
+        self.assertIn("skills/cfd-web-visualization/SKILL.md", self.files)
+        self.assertIn("mcp/cfd-npy3d/tools/npy3d_web_viewer.json", self.files)
+        self.assertIn("config.json", self.files)
+
+    def test_web_assets_are_normalized_as_text(self):
+        for name in self.VIEWER_ASSETS:
+            with self.subTest(file=name):
+                self.assertNotIn(b"\r\n", self.files[name], "文本资源应统一为 LF")
+
+    def test_runtime_output_dir_is_not_packaged(self):
+        self.assertFalse([n for n in self.files if "/output/" in f"/{n}"],
+                         "运行期产物目录不应进入发布包")
 
 
 class TranscriptTests(unittest.TestCase):

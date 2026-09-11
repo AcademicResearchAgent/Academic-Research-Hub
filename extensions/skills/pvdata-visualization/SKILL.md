@@ -31,12 +31,15 @@ description: 把 ParaView 原生支持的常见文件格式（.vtu/.vtp/.vti/.vt
 | `mcp__cfd_npy3d__pvdata_render_scatter3d` | 指定数组某时间步三维点云着色 PNG |
 | `mcp__cfd_npy3d__pvdata_render_animation` | 时变文件逐时间步点云 GIF（时间步很多的文件较慢，先 inspect 看步数再定 max_frames） |
 | `mcp__cfd_npy3d__pvdata_import` | 仅用于 x-y 平面 2D 场：导入为 X/Y/Q .npy 交给 `npy3d-*` 渲染曲面（详见 `pvdata-import` 技能） |
+| `mcp__cfd_npy3d__npy3d_web_viewer` | Web 工作台入口：导入 ParaView 文件后在浏览器内实时交互渲染点云/曲面，可选导出论文插图 |
 
 ## 标准流程
 
 1. **检视**：`mcp__cfd_npy3d__pvdata_inspect(file_path=<文件>)` 拿到数组名、时间步、点数量级；
 2. **单帧**：`mcp__cfd_npy3d__pvdata_render_scatter3d(file_path=..., array_name=<数组>, timestep_index=<步>, case=<归档名>)`；
-3. **动画**（有多个时间步时）：`mcp__cfd_npy3d__pvdata_render_animation(file_path=..., array_name=<数组>, max_frames=<帧数>, case=<归档名>)`。
+3. **动画**（有多个时间步时）：`mcp__cfd_npy3d__pvdata_render_animation(file_path=..., array_name=<数组>, max_frames=<帧数>, case=<归档名>)`；
+4. **实时观测**（用户想交互式看图时）：`mcp__cfd_npy3d__npy3d_web_viewer(file_path=<文件>)`
+   先把文件导入工作台再打开渲染引擎；详见 `cfd-web-visualization` 技能。
 
 ## 自动处理规则
 
